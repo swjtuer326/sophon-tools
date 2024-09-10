@@ -15,7 +15,7 @@ pushd "$script_path"
 		pushd "$dir"
 			$CMD_BASH release.sh
 			if [ -d output ]; then
-				mv output/* "$script_path/output/" 2&>/dev/null
+				cp -r output/* "$script_path/output/" 2>/dev/null
 			fi
 		popd
 	done

@@ -4,8 +4,8 @@ BUILD_RET=0
 
 echo "build socbak ..."
 
-rm -rf socbak.zip 2&>/dev/null
-rm -rf output 2&>/dev/null
+rm -rf socbak.zip 2>/dev/null
+rm -rf output 2>/dev/null
 mkdir output
 
 if [ -f "$CMD_7Z" ]; then
