@@ -16,13 +16,14 @@
 | bmsec      | source/pbmsec | 是 | 用于SE6/8高密度服务器的易用性命令行工具 |
 | socbak   | source/psocbak | 是 | 用于BM1684/BM1684X/BM1688/CV186AH芯片刷机包打包 |
 | get_info | source/pget_info | 是 | 用于获取BM1684/BM1684X/BM1688/CV186AH芯片的性能指标 |
+| memory_edit | source/pmemory_edit | 是 | 用于获取BM1684/BM1684X/BM1688/CV186AH芯片的性能指标 |
 
 ## 编译方式
 
 1. 支持一键编译的子项目在本目录下执行 `release.sh` 后会将成果输出到 `output` 目录
 2. 不支持一键编译的子项目请参考源码目录中的 `readme.md` 自行准备环境编译
 
-## 编译依赖
+## 一键编译的子项目的编译依赖
 
 * 编译主机架构:amd64
 * 7z/zip

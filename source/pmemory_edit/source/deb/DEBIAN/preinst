@@ -1,0 +1,4 @@
+#!/bin/bash
+
+rm /bin/memory_edit.sh -f
+rm /opt/sophon/memory_edit -rf

@@ -4,8 +4,6 @@ build_soc/
 data/
 images/
 models/
-output/*
-!.gitkeep
 
 *.zip
 *.tar
@@ -34,3 +32,12 @@ yarn.lock
 package-lock.json
 
 __pycache__
+
+# add
+*.deb
+*.html
+*.1
+output
+source/deb/opt/sophon/*
+!.gitkeep
+*.tar.xz

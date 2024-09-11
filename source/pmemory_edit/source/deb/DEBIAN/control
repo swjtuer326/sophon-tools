@@ -1,0 +1,7 @@
+Package: memory-edit
+Source: memory-edit
+Version: MEMORY_EDIT_VERSION
+Architecture: arm64
+Maintainer: sophon
+Priority: optional
+Description: This is a memory layout modification tool for Sophon SoCs.

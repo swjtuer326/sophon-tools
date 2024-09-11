@@ -1,0 +1,12 @@
+#!/bin/bash
+
+latest_version_file=$(ls -t /opt/sophon/memory_edit_v*.tar.xz 2>/dev/null | head -n 1)
+if [[ "$latest_version_file" == "" ]]; then exit -1; fi
+pushd /opt/sophon/
+tar -xaf ${latest_version_file}
+popd
+sync
+rm ${latest_version_file}
+chmod +x /opt/sophon/memory_edit/memory_edit.sh
+ln -s /opt/sophon/memory_edit/memory_edit.sh /bin/memory_edit.sh
+sync
