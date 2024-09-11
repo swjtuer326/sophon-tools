@@ -41,3 +41,7 @@
 * riscv64 linux gcc7.5(ubuntu18)
 * armbi linux gcc7.5(ubuntu18)
 * sw_64 linux gcc10.3(ubuntu18)
+
+## 发布方式
+
+使用当前目录的CPP源码编译出各个架构的运行程序，然后使用dfss_pip目录下的python工程将工具发布到pip上

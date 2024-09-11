@@ -1,0 +1,8 @@
+dist
+build
+__pycache__
+*.whl
+dfss.egg-info
+!output
+!.gitkeep
+*.json
