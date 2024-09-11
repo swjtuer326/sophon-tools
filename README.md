@@ -19,6 +19,7 @@
 | memory_edit | source/pmemory_edit | 是 | 用于修改BM1684/BM1684X/BM1688/CV186AH的设备内存布局 |
 | qt_memory_edit | source/pqt_memory_edit | 否 | 图形化的远程修改设备内存布局的工具 |
 | qt_batch_deployment | source/pqt_batch_deployment | 否 | 基于SSH的批量部署工具 |
+| dfss_cpp | source/pdfss_cpp | 否 | DFSS工具CPP工程 |
 
 ## 编译方式
 
