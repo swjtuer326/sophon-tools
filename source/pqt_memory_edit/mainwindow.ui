@@ -1,0 +1,596 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1351</width>
+    <height>705</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>远程内存修改工具</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/pencil-square.svg</normaloff>:/pencil-square.svg</iconset>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout_4">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="topMargin">
+       <number>6</number>
+      </property>
+      <property name="bottomMargin">
+       <number>6</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="label_16">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>20</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:30px;&quot;&gt;远程内存修改工具 VX.X.X 官网地址： &lt;/span&gt;&lt;a href=&quot;https://sophon.cn&quot;&gt;&lt;span style=&quot; font-size:30px; text-decoration: underline; color:#ee3333;&quot;&gt;https://sophon.cn&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_4">
+        <property name="font">
+         <font>
+          <pointsize>16</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>帮助</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <property name="topMargin">
+       <number>6</number>
+      </property>
+      <property name="bottomMargin">
+       <number>6</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QLabel" name="label_6">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>IP和端口</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEdit_ip">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>192.168.150.1</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="font">
+           <font>
+            <pointsize>16</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spinBox_port">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="minimum">
+           <number>22</number>
+          </property>
+          <property name="maximum">
+           <number>65535</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QLabel" name="label_4">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>用户名：</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEdit_user">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>linaro</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QLabel" name="label_5">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>密码：</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEdit_passwd">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>linaro</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_12">
+      <item>
+       <widget class="QLabel" name="label_15">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>14</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>执行文件目录:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit_dir">
+        <property name="font">
+         <font>
+          <pointsize>14</pointsize>
+         </font>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_5">
+        <property name="font">
+         <font>
+          <pointsize>14</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>修改目录</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
+      <property name="topMargin">
+       <number>6</number>
+      </property>
+      <property name="bottomMargin">
+       <number>6</number>
+      </property>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QLabel" name="label_13">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>当前内存分布信息</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEditNpuNow">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEditVpuNow">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEditVppNow">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QLabel" name="label_14">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>最大可配置内存分布信息</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEditNpuMax">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEditVpuMax">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEditVppMax">
+          <property name="font">
+           <font>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_2">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>16</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>获取信息</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_11">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_10">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_9">
+          <item>
+           <widget class="QLabel" name="label_8">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>NPU:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="spinBox_npu">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="maximum">
+             <number>8192</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_2">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>MiB</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_8">
+          <item>
+           <widget class="QLabel" name="label_9">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>VPU:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="spinBox_vpu">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="maximum">
+             <number>4096</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_11">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>MiB</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <item>
+           <widget class="QLabel" name="label_10">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>VPP:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="spinBox_vpp">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="maximum">
+             <number>4096</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_12">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>MiB</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="font">
+         <font>
+          <pointsize>16</pointsize>
+         </font>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_6">
+        <property name="font">
+         <font>
+          <pointsize>16</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>批量配置</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_3">
+        <property name="font">
+         <font>
+          <pointsize>16</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>进行配置</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <property name="topMargin">
+       <number>6</number>
+      </property>
+      <property name="bottomMargin">
+       <number>6</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="label_7">
+        <property name="font">
+         <font>
+          <pointsize>16</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>远程执行信息：</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTextEdit" name="textEdit_sshinfo">
+        <property name="font">
+         <font>
+          <pointsize>16</pointsize>
+         </font>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusBar">
+   <property name="mouseTracking">
+    <bool>false</bool>
+   </property>
+   <property name="tabletTracking">
+    <bool>false</bool>
+   </property>
+   <property name="autoFillBackground">
+    <bool>true</bool>
+   </property>
+  </widget>
+ </widget>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

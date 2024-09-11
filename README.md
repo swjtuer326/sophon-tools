@@ -16,7 +16,8 @@
 | bmsec      | source/pbmsec | 是 | 用于SE6/8高密度服务器的易用性命令行工具 |
 | socbak   | source/psocbak | 是 | 用于BM1684/BM1684X/BM1688/CV186AH芯片刷机包打包 |
 | get_info | source/pget_info | 是 | 用于获取BM1684/BM1684X/BM1688/CV186AH芯片的性能指标 |
-| memory_edit | source/pmemory_edit | 是 | 用于获取BM1684/BM1684X/BM1688/CV186AH芯片的性能指标 |
+| memory_edit | source/pmemory_edit | 是 | 用于修改BM1684/BM1684X/BM1688/CV186AH的设备内存布局 |
+| qt_memory_edit | source/pqt_memory_edit | 是 | 图形化的远程修改设备内存布局的工具 |
 
 ## 编译方式
 

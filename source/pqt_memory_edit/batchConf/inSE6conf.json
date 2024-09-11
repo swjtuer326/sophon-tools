@@ -1,0 +1,76 @@
+{
+    "remoteInf": [
+        {
+            "IP": "172.16.140.11",
+            "Password": "linaro",
+            "Port": 22,
+            "Username": "linaro"
+        },
+        {
+            "IP": "172.16.140.12",
+            "Password": "linaro",
+            "Port": 22,
+            "Username": "linaro"
+        },
+        {
+            "IP": "172.16.140.13",
+            "Password": "linaro",
+            "Port": 22,
+            "Username": "linaro"
+        },
+        {
+            "IP": "172.16.140.14",
+            "Password": "linaro",
+            "Port": 22,
+            "Username": "linaro"
+        },
+        {
+            "IP": "172.16.140.15",
+            "Password": "linaro",
+            "Port": 22,
+            "Username": "linaro"
+        },
+        {
+            "IP": "172.16.140.16",
+            "Password": "linaro",
+            "Port": 22,
+            "Username": "linaro"
+        },
+        {
+            "IP": "172.16.150.11",
+            "Password": "linaro",
+            "Port": 22,
+            "Username": "linaro"
+        },
+        {
+            "IP": "172.16.150.12",
+            "Password": "linaro",
+            "Port": 22,
+            "Username": "linaro"
+        },
+        {
+            "IP": "172.16.150.13",
+            "Password": "linaro",
+            "Port": 22,
+            "Username": "linaro"
+        },
+        {
+            "IP": "172.16.150.14",
+            "Password": "linaro",
+            "Port": 22,
+            "Username": "linaro"
+        },
+        {
+            "IP": "172.16.150.15",
+            "Password": "linaro",
+            "Port": 22,
+            "Username": "linaro"
+        },
+        {
+            "IP": "172.16.150.16",
+            "Password": "linaro",
+            "Port": 22,
+            "Username": "linaro"
+        }
+    ]
+}

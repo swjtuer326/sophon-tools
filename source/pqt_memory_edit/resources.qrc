@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>pencil-square.svg</file>
+        <file>sophgo-logo-new2.png</file>
+        <file>theme.qss</file>
+        <file>SourceHanSansCN-Medium.otf</file>
+        <file alias="mem_edit_file">memory_edit.tar.xz</file>
+        <file>batchConf/inSE6conf.json</file>
+        <file>batchConf/outSE6conf.json</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=qt_mem_edit
+Comment=基于Qt的远程内存修改工具(算能科技)
+Exec=qt_mem_edit
+Icon=qt_mem_edit
+Categories=Office;
+X-AppImage-Version=06990f0
