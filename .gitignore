@@ -6,7 +6,7 @@ images/
 models/
 output/*
 !.gitkeep
-
+*.user
 *.zip
 *.tar
 *.tar.gz
