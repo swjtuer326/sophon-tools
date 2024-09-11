@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Define the process name to search for
+process_name=$1
+
+# Get a list of PIDs for the specified process
+pids=$(ps aux | grep "$process_name" | grep -v grep | awk '{print $2}')
+
+# Terminate each PID
+for pid in $pids; do
+  kill -9 "$pid"
+done
+

@@ -1,0 +1,43 @@
+#!/bin/bash
+###############################################
+############zetao.zhang@sophgo.com#############
+###############################################
+
+# 获取当前路径
+seNCtrl_PWD="$(dirname "$(readlink -f "$0")")"
+
+seNCtrl_MULTIPLE_SEPARATOR='+'
+
+seNCtrl_command_exists() {
+  command -v "$1" > /dev/null 2>&1
+}
+
+# 初始化必要环境变量
+for file in $seNCtrl_PWD/configs/*.sh; do
+    source "$file"
+    if [ "$seNCtrl_CONFIG_FLAG" == "ERROR" ];then echo "source configs subInfo error!" && exit -1; fi
+done
+
+if [ $# -gt 0 ]; then
+    if [ -n "${seNCtrl_OPTIONS_BY_NAME["$1"]}" ]; then
+        userArgs=("$@")
+        unset userArgs[0]
+        source ${seNCtrl_PWD}/commands/${seNCtrl_OPTIONS_BY_NAME["$1"]} "${userArgs[@]}"
+    else
+        echo "error args: $1"
+    fi
+else
+    while true; do
+        echo "==============================================================="
+        echo -e "[$seNCtrl_COMMAND_NUM] $seNCtrl_OPTIONS_INFO"
+        read choices
+        if [[ "$choices" =~ ^[0-9]+$ &&  choices -ge 1 &&  choices -le $seNCtrl_COMMAND_NUM ]]; then
+            source ${seNCtrl_PWD}/commands/${seNCtrl_OPTIONS_BY_ID["$choices"]}
+        elif [[ "$choices" == "" ]]; then
+            continue
+        else
+            echo "exit"
+            exit 0
+        fi
+    done
+fi

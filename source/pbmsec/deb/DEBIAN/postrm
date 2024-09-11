@@ -1,0 +1,10 @@
+#!/bin/bash
+
+rm -rf /etc/exports.d/bmsecNfs.exports
+rm -rf /opt/sophon/bmsec/configs/subNANInfo
+
+if command -v mandb &> /dev/null
+then
+    mandb
+fi
+systemctl daemon-reload

@@ -1,0 +1,24 @@
+#!/bin/bash
+
+file="/etc/default/tftpd-hpa"
+
+if [[ $(grep -o '\-v' "$file") ]]; then
+    echo "TFTP_OPTIONS already contains '-v'. No changes made."
+else
+    sed -i 's/\(TFTP_OPTIONS="\)/\1-v /' "$file"
+    echo "Added '-v' to TFTP_OPTIONS."
+fi
+
+systemctl restart tftpd-hpa
+rm -rf /bin/bmsec
+ln -s /opt/sophon/bmsec/bmsec /bin/
+
+rm -rf /opt/sophon/bmsec/configs/subNANInfo
+
+if command -v mandb &> /dev/null
+then
+    mandb
+fi
+
+systemctl daemon-reload
+systemctl enable bmsec-auto-start

@@ -2,6 +2,9 @@
 
 BUILD_RET=0
 
+export CMD_7Z=$(command -v 7z)
+export CMD_ZIP=$(command -v zip)
+
 echo "build socbak ..."
 
 rm -rf socbak.zip 2>/dev/null

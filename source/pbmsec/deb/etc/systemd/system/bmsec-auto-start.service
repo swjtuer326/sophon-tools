@@ -1,0 +1,11 @@
+[Unit]
+Description=auto setup bmsec.
+After=network.target bmrt_setup.service
+
+[Service]
+User=root
+ExecStart=/bin/bmsec pt run
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,72 @@
+#!/bin/bash
+
+# 当前所有子设备数量,用于校验该文件是否配置正确
+seNCtrl_ALL_SUB_NUM=12
+seNCtrl_CONFIG_FLAG="OK"
+
+unset seNCtrl_ALL_SUB_IP_ID
+declare -A seNCtrl_ALL_SUB_IP_ID
+seNCtrl_ALL_SUB_IP_ID["172.16.140.11"]="1"
+seNCtrl_ALL_SUB_IP_ID["172.16.140.12"]="2"
+seNCtrl_ALL_SUB_IP_ID["172.16.140.13"]="3"
+seNCtrl_ALL_SUB_IP_ID["172.16.140.14"]="4"
+seNCtrl_ALL_SUB_IP_ID["172.16.140.15"]="5"
+seNCtrl_ALL_SUB_IP_ID["172.16.140.16"]="6"
+seNCtrl_ALL_SUB_IP_ID["172.16.150.11"]="7"
+seNCtrl_ALL_SUB_IP_ID["172.16.150.12"]="8"
+seNCtrl_ALL_SUB_IP_ID["172.16.150.13"]="9"
+seNCtrl_ALL_SUB_IP_ID["172.16.150.14"]="10"
+seNCtrl_ALL_SUB_IP_ID["172.16.150.15"]="11"
+seNCtrl_ALL_SUB_IP_ID["172.16.150.16"]="12"
+
+# 当前所有子设备IP
+seNCtrl_ALL_SUB_IP=(
+    #设备1-6
+    "172.16.140.11" "172.16.140.12" "172.16.140.13" "172.16.140.14" "172.16.140.15" "172.16.140.16"
+    #设备7-12
+    "172.16.150.11" "172.16.150.12" "172.16.150.13" "172.16.150.14" "172.16.150.15" "172.16.150.16"
+)
+
+# 当前所有子设备端口
+seNCtrl_ALL_SUB_PORT=(
+    #设备1-6
+    "22" "22" "22" "22" "22" "22" 
+    #设备7-12 
+    "22" "22" "22" "22" "22" "22"
+)
+
+# 当前所有子设备远程登录用户名
+seNCtrl_ALL_SUB_USER=( 
+    #设备1-6 
+    "linaro" "linaro" "linaro" "linaro" "linaro" "linaro" 
+    #设备7-12 
+    "linaro" "linaro" "linaro" "linaro" "linaro" "linaro"
+)
+
+# 当前所有子设备远程登录密码
+seNCtrl_ALL_SUB_PASSWORD=( 
+    #设备1-6 
+    "linaro" "linaro" "linaro" "linaro" "linaro" "linaro" 
+    #设备7-12 
+    "linaro" "linaro" "linaro" "linaro" "linaro" "linaro"
+)
+
+######################################################################
+
+if [ "${#seNCtrl_ALL_SUB_IP[@]}" -ne "$seNCtrl_ALL_SUB_NUM" ]; then
+    seNCtrl_CONFIG_FLAG="ERROR"
+    exit -1
+fi
+if [ "${#seNCtrl_ALL_SUB_PORT[@]}" -ne "$seNCtrl_ALL_SUB_NUM" ]; then
+    seNCtrl_CONFIG_FLAG="ERROR"
+    exit -1
+fi
+if [ "${#seNCtrl_ALL_SUB_USER[@]}" -ne "$seNCtrl_ALL_SUB_NUM" ]; then
+    seNCtrl_CONFIG_FLAG="ERROR"
+    exit -1
+fi
+if [ "${#seNCtrl_ALL_SUB_PASSWORD[@]}" -ne "$seNCtrl_ALL_SUB_NUM" ]; then
+    seNCtrl_CONFIG_FLAG="ERROR"
+    exit -1
+fi
+

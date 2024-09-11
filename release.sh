@@ -2,13 +2,11 @@
 
 script_path="$(dirname "$(readlink -f "$0")")"
 
-export CMD_7Z=$(which 7z)
-export CMD_ZIP=$(which zip)
-export CMD_BASH=$(which bash)
+export CMD_BASH=$(command -v bash)
 
 echo "release start ..."
 pushd "$script_path"
-
+	rm output/* -rf
 	for dir in source/*/
 	do
 		echo "release $dir ..."

@@ -4,7 +4,6 @@ build_soc/
 data/
 images/
 models/
-output/*
 
 *.zip
 *.tar
@@ -33,3 +32,8 @@ yarn.lock
 package-lock.json
 
 __pycache__
+
+# add
+*.deb
+*.html
+*.1

@@ -1,0 +1,7 @@
+Package: bmsec
+Source: bmsec
+Version: BMSEC_VERSION
+Architecture: all
+Maintainer: sophon
+Priority: optional
+Description: This is a tool for se6/8.
