@@ -61,6 +61,7 @@ function de_emmcfile(){
 	if [[ "$MEMORY_EDIT_RAMDISK" == "1" ]]; then
 		echo Info: cpio dump ramdisk $image_file_name ...
 		mkdir -p ${OUTPUT_DIR}/ramdisk
+		image_file="$image_file_name"
 		if [[ $image_file_name == *".gz" ]]; then
 			pushd ${OUTPUT_DIR}
 			gzip -d $image_file_name
