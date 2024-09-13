@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# env SOC_BAK_ALL_IN_ONE=1 for socbak allinone
+# env SOC_BAK_FIXED_SIZE=1 for socbak fixed size mode
+
 # These parameters are used to exclude irrelevant files
 # and directories in the context of repackaging mode.
 # Users can add custom irrelevant files and directories
