@@ -26,7 +26,7 @@ TGZ_FILES_SIZE=(["boot"]=131072 ["recovery"]=3145728 ["rootfs"]=2621440 ["opt"]=
 TGZ_ALL_SIZE=$((100*1024))
 EMMC_ALL_SIZE=20971520
 EMMC_MAX_SIZE=30000000
-ROOTFS_RW_SIZE=$((6144*1024))
+ROOTFS_RW_SIZE=$((6291456))
 TAR_SIZE=0
 PWD="$(dirname "$(readlink -f "\$0")")"
 TGZ_FILES_PATH=${PWD}
@@ -311,6 +311,11 @@ function socbak_gen_partition_subimg()
 			size_step=1000
 			step_num=$(($2 / 1024 / 1024 / $size_step))
 		fi
+		if [[ "${SOC_BAK_FIXED_SIZE}" != "" ]]; then
+			echo "INFO: fixed size" | tee -a $SOCBAK_LOG_PATH
+			size_step=0
+			step_num=0
+		fi
 		resize_min_size "$TGZ_FILES_PATH/sparse-file-$1" $((${TGZ_FILES_SIZE["${1}"]} / 1024)) ${size_step} ${step_num}
 		TGZ_FILES_SIZE["${1}"]=$socbak_resize_min_size_kb
 	elif [[ "$3" == "fat" ]]; then
@@ -398,17 +403,21 @@ else
 				popd
 				;;
 		esac
-		socbak_get_tar_size ${TGZ_FILE}.tgz
-		TAR_SIZE_AUTO=$(( ${SOCBAK_GET_TAR_SIZE_KB} / 8 ))
-		if [ $TAR_SIZE_AUTO -gt $TAR_SIZE ]; then
-			TAR_SIZE=$(($TAR_SIZE_AUTO))
-		fi
-		TAR_SIZE=$((${SOCBAK_GET_TAR_SIZE_KB}+${TAR_SIZE}))
-		echo "INFO: $TGZ_FILE : $TAR_SIZE KB" | tee -a $SOCBAK_LOG_PATH
-		if [ $TAR_SIZE -gt ${TGZ_FILES_SIZE["$TGZ_FILE"]} ];
-		then
-			echo "INFO: need to expand $TGZ_FILE from ${TGZ_FILES_SIZE[$TGZ_FILE]} KB to $TAR_SIZE KB" | tee -a $SOCBAK_LOG_PATH
-			TGZ_FILES_SIZE[$TGZ_FILE]=$TAR_SIZE
+		if [[ "${SOC_BAK_FIXED_SIZE}" != "" ]]; then
+			echo "INFO: fixed size" | tee -a $SOCBAK_LOG_PATH
+		else
+			socbak_get_tar_size ${TGZ_FILE}.tgz
+			TAR_SIZE_AUTO=$(( ${SOCBAK_GET_TAR_SIZE_KB} / 8 ))
+			if [ $TAR_SIZE_AUTO -gt $TAR_SIZE ]; then
+				TAR_SIZE=$(($TAR_SIZE_AUTO))
+			fi
+			TAR_SIZE=$((${SOCBAK_GET_TAR_SIZE_KB}+${TAR_SIZE}))
+			echo "INFO: $TGZ_FILE : $TAR_SIZE KB" | tee -a $SOCBAK_LOG_PATH
+			if [ $TAR_SIZE -gt ${TGZ_FILES_SIZE["$TGZ_FILE"]} ];
+			then
+				echo "INFO: need to expand $TGZ_FILE from ${TGZ_FILES_SIZE[$TGZ_FILE]} KB to $TAR_SIZE KB" | tee -a $SOCBAK_LOG_PATH
+				TGZ_FILES_SIZE[$TGZ_FILE]=$TAR_SIZE
+			fi
 		fi
 	done
 fi
