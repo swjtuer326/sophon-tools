@@ -357,8 +357,7 @@ if [[ "${ALL_IN_ONE_FLAG}" != "" ]] && [[ "${ALL_IN_ONE_SCRIPT}" != "" ]]; then
 				part_size_max=$(($part_size_max * 2))
 			;;
 			"boot")
-				part_size_max="$(du --apparent-size -sb /${TGZ_FILE} | awk '{print $1}')"
-				part_size_max=$(($part_size_max + 50 * 1024 * 1024))
+				part_size_max=$((${TGZ_FILES_SIZE["${TGZ_FILE}"]} * 1024))
 				partition_format="fat"
 			;;
 			*)

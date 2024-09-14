@@ -42,4 +42,4 @@ c39ef67c8d241527e6eb0c87fc32d0cd  ./binTools/uuidd
 d509238c11723c82c6c060b0ff4a918c  ./binTools/uuidgen
 235968706240acc6e81423e8571416c8  ./script/bm1684/bm_make_package.sh
 3cda77d39ae2f66c8453870004a2fecd  ./script/bm1688/bm_make_package.sh
-20994bbbbf9f9cf688e0fe27a3f06436  ./socbak.sh
+c31968e4585ddf75102c544e1fd08dd4  ./socbak.sh
