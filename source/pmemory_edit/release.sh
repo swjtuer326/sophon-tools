@@ -2,7 +2,7 @@
 
 BUILD_RET=0
 
-MEMORY_EDIT_VERSION="2.9"
+MEMORY_EDIT_VERSION="2.10"
 export CMD_DPKG_DEB=$(command -v dpkg-deb)
 
 echo "build memory_edit ..."

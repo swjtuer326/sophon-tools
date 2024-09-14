@@ -307,7 +307,7 @@ ddr1_size=0
 ddr2_size=0
 ddr3_size=0
 ddr4_size=0
-echo "INFO: version: 2.9"
+echo "INFO: version: 2.10"
 if ( [ $# -eq 1 ] || [ $# -eq 2 ] ) && [ "$1" == "-p" ]; then
 	# 仅打印信息
 	print_info=1
@@ -481,6 +481,7 @@ if [[ $runtime_info_target == "bm1684" ]]; then
 	if [[ $ramoops_mem_start -eq $(( "0x314000000" + "0" )) ]]; then
 		vpu_mem_size_to512M_flag=1
 	fi
+	vpu_size_add=0
 	echo "Info: vpu_mem_size: $(printf "0x%x" ${vpu_mem_size})" >> $log_file_path
 	if [[ $vpu_mem_size_to512M_flag -eq 1 ]]; then
 		vpu_size_add=$(($const_kernel_minimal))
@@ -488,6 +489,8 @@ if [[ $runtime_info_target == "bm1684" ]]; then
 	else
 		vpu_size_add=$(($vpu_mem_size + $const_kernel_minimal))
 	fi
+	# BM1684(X)的VPU高位需要预留1MB大小的内存区域
+	vpu_size_add=$(($vpu_size_add + $size_1m))
 	echo "Info: vpu_size_add: $(printf "0x%x" ${vpu_size_add})" >> $log_file_path
 fi
 vpp_size_add=0
@@ -750,8 +753,10 @@ for key in "${user_mem[@]}"; do
 	result=$((${memory_ddr_size[${memory_ddr_index[$key]}]} - ${user_mem_size[$key]}))
 	hex_result=$(printf "0x%x" "$result")
 	if [[ $key == "npu" ]]; then hex_result=$(printf "0x%x" ${npu_size_add}); fi
+	# BM1684(X)的VPU最高1M空间需要预留
+	if [[ $key == "vpu" ]] && [[ $runtime_info_target == "bm1684" ]]; then hex_result=$(($hex_result - $size_1m)); fi
 	ion_mem_start["$key"]=${hex_result}
-	ion_mem_end["$key"]=$((${ion_mem_start["$key"]} + ${user_mem_size[$key]} -1))
+	ion_mem_end["$key"]=$((${ion_mem_start["$key"]} + ${user_mem_size[$key]} - 1))
 	add_ion "$file_path" "$key" "${memory_ddr_index[$key]}" "${ion_mem_start["$key"]}" "${user_mem_size[$key]}" >> $log_file_path
 	cp "$file_path.new" "$file_path"
 done
@@ -764,22 +769,23 @@ if [[ $runtime_info_target == "bm1684" ]]; then
 		if [[ $need_del_vpp -eq 0 ]]; then
 			vpu_mem_result=$((${memory_ddr_size['0x04']} - ${user_mem_size['vpp']}))
 			if [[ ${vpu_mem_result} -lt ${vpu_mem_size} ]]; then
-				vpu_mem_result=$((${memory_ddr_size['0x03']} - ${vpu_mem_size}))
+				vpu_mem_result=$((${memory_ddr_size['0x03']} - ${vpu_mem_size} - $size_1m))
 				vpu_mem_ddr_index='0x03'
 				echo "Warning: vpu_mem and vpp are placed in different ddr because the vpp area is too large, and the vpu will not be used"
 			else
-				vpu_mem_result=$((${memory_ddr_size['0x04']} - ${user_mem_size['vpp']} - ${vpu_mem_size}))
+				# VPU和VPP共用内存，则最高位同样需要预留1M
+				vpu_mem_result=$((${memory_ddr_size['0x04']} - ${user_mem_size['vpp']} - ${vpu_mem_size} - $size_1m))
 				vpu_mem_ddr_index='0x04'
 			fi
 		else
-			vpu_mem_result=$((${memory_ddr_size['0x03']} - ${user_mem_size['vpu']} - ${vpu_mem_size}))
+			vpu_mem_result=$((${memory_ddr_size['0x03']} - ${vpu_mem_size} - $size_1m))
 			vpu_mem_ddr_index='0x03'
 		fi
 	else
 		if [[ vpu_mem_size_to512M_flag -eq 1 ]]; then
 			vpu_mem_result=$(("0x20000000" + "0"))
 		else
-			vpu_mem_result=$((${memory_ddr_size['0x03']} - ${user_mem_size['vpu']} - ${vpu_mem_size}))
+			vpu_mem_result=$((${memory_ddr_size['0x03']} - ${user_mem_size['vpu']} - ${vpu_mem_size} - $size_1m))
 		fi
 		vpu_mem_ddr_index='0x03'
 	fi
