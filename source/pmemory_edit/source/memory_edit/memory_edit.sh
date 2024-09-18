@@ -692,6 +692,10 @@ if [[ $runtime_info_target == "bm1684" ]]; then
 fi
 # VPP
 if [[ $runtime_info_target == "bm1684" ]]; then
+	if [[ $need_del_vpu -eq 1 ]] && [[ $need_del_vpp -eq 0 ]]; then
+		echo "Warning: vpu use vpp mem, so need to reserve 1M of high address space"
+		vpp_size_add=$(($vpp_size_add + $size_1m))
+	fi
 	if [ $((${user_mem_size["vpp"]} + vpp_size_add)) -gt $ddr4_size ]; then 
 		echo "Error: vpp size ${user_mem_size["vpp"]} error" | tee -a $log_file_path
 		exit -1
@@ -754,7 +758,12 @@ for key in "${user_mem[@]}"; do
 	hex_result=$(printf "0x%x" "$result")
 	if [[ $key == "npu" ]]; then hex_result=$(printf "0x%x" ${npu_size_add}); fi
 	# BM1684(X)的VPU最高1M空间需要预留
-	if [[ $key == "vpu" ]] && [[ $runtime_info_target == "bm1684" ]]; then hex_result=$(($hex_result - $size_1m)); fi
+	if [[ $key == "vpu" ]] && [[ $runtime_info_target == "bm1684" ]]; then 
+		hex_result=$(($hex_result - $size_1m)); 
+	fi
+	if [[ $key == "vpp" ]] && [[ $runtime_info_target == "bm1684" ]] && [[ $need_del_vpu -eq 1 ]] && [[ $need_del_vpp -eq 0 ]]; then 
+		hex_result=$(($hex_result - $size_1m)); 
+	fi
 	ion_mem_start["$key"]=${hex_result}
 	ion_mem_end["$key"]=$((${ion_mem_start["$key"]} + ${user_mem_size[$key]} - 1))
 	add_ion "$file_path" "$key" "${memory_ddr_index[$key]}" "${ion_mem_start["$key"]}" "${user_mem_size[$key]}" >> $log_file_path
