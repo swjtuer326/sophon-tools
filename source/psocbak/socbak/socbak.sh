@@ -56,7 +56,7 @@ popd
 
 ALL_IN_ONE_FLAG=""
 ALL_IN_ONE_SCRIPT=""
-if [[ "${SOC_BAK_ALL_IN_ONE}" != "" ]]; then
+if [[ "$SOC_BAK_ALL_IN_ONE" != "" ]]; then
 	ALL_IN_ONE_FLAG="1"
 	echo "INFO: open all in one mode for ${ALL_IN_ONE_FLAG}" | tee -a $SOCBAK_LOG_PATH
 fi
@@ -314,7 +314,7 @@ function socbak_gen_partition_subimg()
 			size_step=1000
 			step_num=$(($2 / 1024 / 1024 / $size_step))
 		fi
-		if [[ "${SOC_BAK_FIXED_SIZE}" != "" ]]; then
+		if [[ "$SOC_BAK_FIXED_SIZE" != "" ]]; then
 			echo "INFO: fixed size" | tee -a $SOCBAK_LOG_PATH
 			size_step=0
 			step_num=0
@@ -405,7 +405,7 @@ else
 				popd
 				;;
 		esac
-		if [[ "${SOC_BAK_FIXED_SIZE}" != "" ]]; then
+		if [[ "$SOC_BAK_FIXED_SIZE" != "" ]]; then
 			echo "INFO: fixed size" | tee -a $SOCBAK_LOG_PATH
 		else
 			socbak_get_tar_size ${TGZ_FILE}.tgz
