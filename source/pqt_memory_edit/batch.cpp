@@ -37,7 +37,7 @@ class portSpinBoxDelegate : public QStyledItemDelegate {
 class infLineEditDelegate : public QStyledItemDelegate {
  public:
   QRegularExpressionValidator userPasswdValidator =
-    QRegularExpressionValidator(QRegularExpression("^[a-zA-Z0-9_]*$"), this);
+    QRegularExpressionValidator(QRegularExpression("^[ -~]*$"), this);
   infLineEditDelegate(QObject* parent = 0):
     QStyledItemDelegate(parent) {};
   QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option,
@@ -70,8 +70,6 @@ class ipLineEditDelegate : public QStyledItemDelegate {
  public:
   QRegularExpression
   regex = QRegularExpression("^((\\d{1,2}|1\\d{2}|2[0-4]\\d|25[0-5])\\.){3}(\\d{1,2}|1\\d{2}|2[0-4]\\d|25[0-5])$");
-  QRegularExpressionValidator userPasswdValidator =
-    QRegularExpressionValidator(QRegularExpression("^[a-zA-Z0-9_]*$"), this);
   ipLineEditDelegate(QObject* parent = 0): QStyledItemDelegate(parent) {};
   QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option,
     const QModelIndex& index) const override {
