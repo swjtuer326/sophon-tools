@@ -4,7 +4,7 @@ BUILD_RET=0
 
 echo "build bmsec ..."
 
-BMSEC_PACKAGE_VERSION="1.5.0"
+BMSEC_PACKAGE_VERSION="1.5.1"
 
 export CMD_PANDOC=$(command -v pandoc)
 export CMD_DPKG_DEB=$(command -v dpkg-deb)
@@ -35,8 +35,7 @@ if [ -f "$CMD_PANDOC" ] && [ -f "$CMD_DPKG_DEB" ]; then
 		cp bmsec.1 deb/usr/share/man/man1/
 	popd
 	rm -rf deb/opt/sophon/bmsec/configs/subNANInfo
-	BMSEC_BUILD_TIME="UTC$(date -u +%Y%m%d%H%M%S)"
-	BMSEC_VERSION=${BMSEC_PACKAGE_VERSION}.${BMSEC_BUILD_TIME}
+	BMSEC_VERSION=${BMSEC_PACKAGE_VERSION}
 	cp deb/DEBIAN/control ./control.bak
 	sed -i "s/BMSEC_VERSION/$BMSEC_VERSION/" deb/DEBIAN/control
 	echo "deb build version: ${BMSEC_VERSION}"
