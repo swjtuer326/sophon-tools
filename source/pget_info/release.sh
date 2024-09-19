@@ -9,5 +9,6 @@ rm -rf output
 mkdir output
 
 cp get_info.sh output/
+cp get_info_log_to_png.* output/
 
 exit $BUILD_RET

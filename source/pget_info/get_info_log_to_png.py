@@ -60,7 +60,6 @@ with open(log_name,'r') as file:
                     data = max(data , item["min"])
                 infos_data[item["name"]].append(data)
 
-
 def find_flexible_layout(n):
     best_diff = float('inf')
     best_pair = (1, n)
@@ -75,14 +74,11 @@ def find_flexible_layout(n):
                 if current_diff < best_diff or (current_diff == best_diff and abs(rows - cols) < abs(best_pair[0] - best_pair[1])):
                     best_diff = current_diff
                     best_pair = (rows, cols)
-    
     return best_pair
-
 
 rows = 0
 cols = 0
 cols, rows = find_flexible_layout(len(configs["info"]))
-
 print("rows:", rows)
 print("cols:", cols)
 
@@ -93,7 +89,6 @@ if len(boot_time_data) <= 0:
 print("Start draw pic...")
 
 fig, axs = plt.subplots(rows,cols,figsize=(rows * 5, cols * 8))
-
 
 for j in range(cols):
     for i in range(rows):
