@@ -8,6 +8,8 @@ models/
 *.zip
 *.tar
 *.tar.gz
+*.log
+*.png
 
 # Model file
 *.mlir

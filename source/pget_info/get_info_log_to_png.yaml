@@ -1,0 +1,63 @@
+point_size: 0.5
+info:
+- name: BOOT_TIME
+  sampling_index: [0, 0]
+  y_name: BOOT TIME(s)
+  min: 0
+- name: CHIP_TEMP
+  sampling_index: [0, 0]
+  y_name: "CHIP TEMP(℃)"
+  max: 120
+  min: -10
+  y_flag: [0, 85, 90, 95, 100, 105]
+- name: BOARD_TEMP
+  sampling_index: [0, 0]
+  y_name: "BOARD TEMP(℃)"
+  max: 120
+  min: -10
+  y_flag: [0, 85, 90, 95, 100, 105]
+- name: TPU_CLK
+  sampling_index: [0, 0]
+  y_name: TPU CLK(Hz)
+  max: 1100000000
+  min: 0
+  y_flag: [950000000]
+- name: CPU_CLK
+  sampling_index: [0, 0]
+  y_name: CPU CLK(Hz)
+  max: 2400000000
+  min: 0
+  y_flag: [2300000000]
+- name: VPU_CLK
+  sampling_index: [0, 0]
+  y_name: VPU CLK(Hz)
+  max: 900000000
+  min: 0
+  y_flag: [500000000, 800000000]
+- name: TPU_USAGE
+  sampling_index: [0, 0]
+  y_name: TPU USAGE(%)
+  max: 100
+  min: 0
+- name: CPU_ALL_USAGE
+  sampling_index: [0, 0]
+  y_name: CPU USAGE(%)
+  max: 100
+  min: 0
+- name: V12_POWER
+  sampling_index: [0, 0]
+  y_name: SM7 POWER(mW)
+  max: 80000
+  min: 0
+  y_flag: [60000]
+- name: VTPU_POWER
+  sampling_index: [0, 0]
+  y_name: BM1684X TPU POWER(W)
+- name: VDDC_POWER
+  sampling_index: [0, 0]
+  y_name: BM1684X VDDC POWER(W)
+- name: SYSTEM_MEM_USAGE
+  sampling_index: [0, 0]
+  y_name: SYSTEM MEM USAGE(%)
+  max: 100
+  min: 0
