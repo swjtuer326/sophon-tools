@@ -105,22 +105,29 @@ function en_emmcfile(){
 		echo Error: no output or multi.its
 		return -1
 	fi
+	OUTPUT_DIR="${memory_edit_PWD}/output"
 	pushd ${memory_edit_PWD}/output
 	if [ "$?" != "0" ]; then return -1; fi
 	if [[ "$MEMORY_EDIT_RAMDISK" == "1" ]]; then
 		get_info_from_its ${memory_edit_PWD}/multi.its "cvitek ramdisk|sophon ramdisk|bitmain ramdisk" "data" >> $log_file_path
 		image_file_name=$(echo "$get_info_from_its_data" | awk -F'"' '{print $2}' | awk -F'/' '{print $2}')
-		echo Info: cpio pack ramdisk $image_file_name ...
-		mkdir -p ${OUTPUT_DIR}/ramdisk
+		if [[ $image_file_name == *".gz" ]]; then
+			image_file=$(echo "$image_file_name" | sed 's/\.gz$//')
+		else
+			image_file=$image_file_name
+		fi
+		echo Info: cpio pack ramdisk $image_file ...
+		pushd ${OUTPUT_DIR}/ramdisk
+		if [ -f ${OUTPUT_DIR}/$image_file ]; then
+			rm -rf ${OUTPUT_DIR}/$image_file
+		fi
+		find . | ${memory_edit_PWD}/bintools/cpio -o -H newc > ${OUTPUT_DIR}/$image_file
+		popd
 		if [[ $image_file_name == *".gz" ]]; then
 			pushd ${OUTPUT_DIR}
-			image_file=$(echo "$image_file_name" | sed 's/\.gz$//')
 			gzip $image_file
 			popd
 		fi
-		pushd ${OUTPUT_DIR}/ramdisk
-		find . | ${memory_edit_PWD}/bintools/cpio -o -H newc > ${OUTPUT_DIR}/$image_file_name
-		popd
 	fi
 	DTS_FILES=$(find . -name "*.dts")
 	DTB_FILES=$(grep 'dtb' ${memory_edit_PWD}/multi.its | grep 'data =' | awk -F'"' '{print $(NF-1)}' | awk -F'/' '{print $(NF)}')
