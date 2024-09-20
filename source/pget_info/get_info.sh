@@ -35,6 +35,10 @@ function od_read_hex() {
     od -An -v -j ${1} -N ${2} -t x -w${2} ${3} 2>/dev/null | sed 's| \\0| |g' | sed 's| \\n| |g' | sed 's| \\r| |g' | tr -d ' '
 }
 
+function od_read_dec_big() {
+    od -An --endian=big -v -j ${1} -N ${2} -t u -w${2} ${3} 2>/dev/null | sed 's| \\0| |g' | sed 's| \\n| |g' | sed 's| \\r| |g' | tr -d ' '
+}
+
 # [i2c bus] [i2c addr(HEX)]
 function get_i2c_dev_ok() {
     i2c_bus=$1
@@ -474,6 +478,22 @@ if [[ "${WORK_MODE}" == "SOC" ]]; then
 	fi
 fi
 
+# DTS_THERMAL_TEMP
+DTS_THERMAL_TEMP=""
+if [[ "${WORK_MODE}" == "SOC" ]]; then
+    if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
+        temp=$(od_read_dec_big 0 32 /proc/device-tree/thermal-zones/soc/trips/soc_tpuclk440m_trip/temperature)
+        temp=$(($temp / 1000))
+        DTS_THERMAL_TEMP="$temp"
+        temp=$(od_read_dec_big 0 32 /proc/device-tree/thermal-zones/soc/trips/soc_tpuclk75m_trip/temperature)
+        temp=$(($temp / 1000))
+        DTS_THERMAL_TEMP="$DTS_THERMAL_TEMP $temp"
+        temp=$(od_read_dec_big 0 32 /proc/device-tree/thermal-zones/soc/trips/soc_crit_trip/temperature)
+        temp=$(($temp / 1000))
+        DTS_THERMAL_TEMP="$DTS_THERMAL_TEMP $temp"
+    fi
+fi
+
 # VTPU_POWER
 VTPU_POWER=""
 VTPU_VOLTAGE=""
@@ -685,6 +705,7 @@ if [[ "${WORK_MODE}" == "SOC" ]]; then
     echo "ETH1_MAC|${ETH1_MAC}|"
     echo "CHIP_TEMP(degree Celsius)|${CHIP_TEMP}|"
     echo "BOARD_TEMP(degree Celsius)|${BOARD_TEMP}|"
+    echo "DTS_THERMAL_TEMP(degree Celsius)|${DTS_THERMAL_TEMP}|"
     echo "VTPU_POWER(W)|${VTPU_POWER}|"
     echo "VTPU_VOLTAGE(mV)|${VTPU_VOLTAGE}|"
     echo "VDDC_POWER(W)|${VDDC_POWER}|"
