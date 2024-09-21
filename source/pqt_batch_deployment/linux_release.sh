@@ -13,6 +13,9 @@ elif [[ $get_arch =~ "mips64" ]];then
 else
     echo "unknown!!"
 fi
+line=$(grep -E '^set\(MY_PROJECT_VERSION "[^"]+"\)' CMakeLists.txt)
+version=$(echo "$line" | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+')
+echo "need build version: ${version}"
 source_path=$(pwd)
 rm output -rf
 mkdir output
