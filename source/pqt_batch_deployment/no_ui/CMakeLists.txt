@@ -27,9 +27,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
 endif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 find_package(Qt5Core)
 
-if(NOT MY_PROJECT_VERSION)
-    set(MY_PROJECT_VERSION "VersionTest")
-endif()
+set(MY_PROJECT_VERSION "V1.4.0")
 configure_file(
   "${CMAKE_SOURCE_DIR}/../version.h.in"
   "${CMAKE_BINARY_DIR}/version.h"

@@ -10,6 +10,8 @@ output/*
 *.zip
 *.tar
 *.tar.gz
+*.AppImage
+
 
 # Model file
 *.mlir
