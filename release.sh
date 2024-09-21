@@ -11,9 +11,13 @@ pushd "$script_path"
 	do
 		echo "release $dir ..."
 		pushd "$dir"
-			$CMD_BASH release.sh
-			if [ -d output ]; then
-				cp -r output/* "$script_path/output/" 2>/dev/null
+			if [ -f release.sh ]; then
+				$CMD_BASH release.sh
+				if [ -d output ]; then
+					cp -r output/* "$script_path/output/" 2>/dev/null
+				fi
+			else
+				echo "[$dir] no have release.sh, cannot auto release"
 			fi
 		popd
 	done
