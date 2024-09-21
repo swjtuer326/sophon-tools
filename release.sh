@@ -23,4 +23,5 @@ pushd "$script_path"
 	done
 
 popd
+git rev-parse HEAD | tee output/git_hash.txt
 echo "release end"
