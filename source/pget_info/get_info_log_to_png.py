@@ -53,7 +53,11 @@ with open(log_name,'r') as file:
             if line.find(item["name"]) >= 0:
                 if infos_data.get(item["name"]) is None:
                     infos_data[item["name"]] = []
-                data = Decimal(line.split("|")[-2].split(" ")[0 + item["sampling_index"][0]].split(",")[0 + item["sampling_index"][1]])
+                item_data=line.split("|")[-2].split(" ")[0 + item["sampling_index"][0]].split(",")[0 + item["sampling_index"][1]]
+                if item_data == "":
+                    data = Decimal(0)
+                else:
+                    data = Decimal(item_data)
                 if item.get("max") is not None:
                     data = min(data , item["max"])
                 if item.get("min") is not None:
