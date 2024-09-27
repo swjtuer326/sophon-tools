@@ -64,25 +64,18 @@ with open(log_name,'r') as file:
                     data = max(data , item["min"])
                 infos_data[item["name"]].append(data)
 
-def find_flexible_layout(n):
-    best_diff = float('inf')
-    best_pair = (1, n)
-    for total in range(n, n + 22):
-        root = int(math.sqrt(total))
-        for i in range(root, 0, -1):
-            if total % i == 0:
-                rows, cols = i, total // i
-                if rows > cols:
-                    rows, cols = cols, rows
-                current_diff = total - n
-                if current_diff < best_diff or (current_diff == best_diff and abs(rows - cols) < abs(best_pair[0] - best_pair[1])):
-                    best_diff = current_diff
-                    best_pair = (rows, cols)
-    return best_pair
+def plan_square_frame(num_squares):
+    if num_squares == 0:
+        num_squares = 1
+    # 计算接近正方形的行和列
+    cols = int(num_squares ** 0.5)  # 计算列数
+    rows = (num_squares + cols - 1) // cols  # 计算行数，确保总数不小于num_squares
+    return cols, rows
+
 
 rows = 0
 cols = 0
-cols, rows = find_flexible_layout(len(configs["info"]))
+cols, rows = plan_square_frame(len(configs["info"]))
 print("rows:", rows)
 print("cols:", cols)
 
@@ -110,7 +103,17 @@ for j in range(cols):
             for item in configs["info"][j*rows+i].get("y_flag"):
                 ax.axhline(y=item, color='red', linestyle=':', linewidth=1)
                 ax.text(0, item, f'{item:.1f}', color='red', fontsize=8, verticalalignment='top', horizontalalignment='left')
-        ax.scatter(boot_time_data, infos_data[configs["info"][j*rows+i]["name"]], s=configs["point_size"], color=("green"))
+        data_temp = infos_data[configs["info"][j*rows+i]["name"]]
+        if len(data_temp) < len(boot_time_data):
+            print("Warring: data num is: ", len(data_temp), "and boot time num is: ", len(boot_time_data))
+            for ii in range(0, len(boot_time_data) - len(data_temp)):
+                data=data_temp[-1]
+                if configs["info"][j*rows+i].get("max") is not None:
+                    data = min(data , configs["info"][j*rows+i]["max"])
+                if configs["info"][j*rows+i].get("min") is not None:
+                    data = max(data , configs["info"][j*rows+i]["min"])
+                data_temp.append(data)
+        ax.scatter(boot_time_data, data_temp, s=configs["point_size"], color=("green"))
         ax.xaxis.set_major_locator(AutoLocator())
         ax.xaxis.set_major_formatter(ScalarFormatter(useOffset=False))
         ax.yaxis.set_major_locator(AutoLocator())
