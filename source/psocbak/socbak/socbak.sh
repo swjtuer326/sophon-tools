@@ -39,12 +39,14 @@ BM1684_SOC_VERSION=0
 NEED_BAK_FLASH=1
 SOC_NAME=""
 PIGZ_GZIP_COM=""
+export SOC_BAK_ALL_IN_ONE=${SOC_BAK_ALL_IN_ONE:-}
+export SOC_BAK_FIXED_SIZE=${SOC_BAK_FIXED_SIZE:-}
 export GZIP=-1
 export PIGZ=-1
 
 chmod +x ${TGZ_FILES_PATH}/binTools
 export PATH="${TGZ_FILES_PATH}/binTools":$PATH
-# find ./ -type f | grep -v "md5.txt" | xargs md5sum > socbak_md5.txt
+# find ./ -type f | grep -vE "md5.txt|\.log|output|\.bin|\.tgz" | xargs md5sum > socbak_md5.txt
 pushd "${TGZ_FILES_PATH}"
 md5sum -c "${TGZ_FILES_PATH}/socbak_md5.txt"
 if [[ "$?" != "0" ]]; then
