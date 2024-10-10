@@ -267,7 +267,7 @@ function socbak_gen_partition_subimg()
 		mkfs.fat "sparse-file-$1"
 		if [[ "$?" != "0" ]]; then echo "ERROR: mkfs.fat $1 error, exit." | tee -a $SOCBAK_LOG_PATH; socbak_cleanup; fi
 	else
-		mkfs.ext4 "sparse-file-$1"
+		mkfs.ext4 -b 4096 -i 16384 "sparse-file-$1"
 		if [[ "$?" != "0" ]]; then echo "ERROR: mkfs.ext4 $1 error, exit." | tee -a $SOCBAK_LOG_PATH; socbak_cleanup; fi
 	fi
 	mkdir "sparse-path-$1"
@@ -327,10 +327,11 @@ function socbak_gen_partition_subimg()
 		TGZ_FILES_SIZE["${1}"]=$(( $2 / 1024 ))
 	fi
 	echo "INFO: partition $1 size is : ${TGZ_FILES_SIZE["${1}"]} KB" | tee -a $SOCBAK_LOG_PATH
+	tune2fs -l "sparse-file-$1" | tee -a $SOCBAK_LOG_PATH
 	mount "sparse-file-$1" "sparse-path-$1"
 	if [[ "$?" != "0" ]]; then echo "ERROR: mount(2) $1 error, exit." | tee -a $SOCBAK_LOG_PATH; socbak_cleanup; fi
 	echo "INFO: print sparse-file-$1 files:" | tee -a $SOCBAK_LOG_PATH
-	ls "sparse-path-$1" -lah
+	ls "sparse-path-$1" -lah | tee -a $SOCBAK_LOG_PATH
 	umount "sparse-path-$1"
 	if [[ "$3" == "ext4" ]]; then
 		e2fsck -fy "sparse-file-$1"
@@ -502,7 +503,7 @@ function socbak_allinone_pack()
 				if [ $3 -eq 1 ]; then
 					mkfs.fat $RECOVERY_DIR/$1
 				elif [ $3 -eq 2 ]; then
-					mkfs.ext4 $RECOVERY_DIR/$1
+					mkfs.ext4 -b 4096 -i 16384 $RECOVERY_DIR/$1
 				fi
 				have_flag=0
 			else
@@ -536,5 +537,3 @@ if [[ "${ALL_IN_ONE_FLAG}" != "" ]] && [[ "${ALL_IN_ONE_SCRIPT}" != "" ]]; then
 fi
 
 sync
-
-
