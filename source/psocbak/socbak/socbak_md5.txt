@@ -1,4 +1,4 @@
-b250789e2427c0f8b7f0edb846cc3329  ./socbak.sh
+5b86d98f2b058aeacb4de5f52c8b8611  ./socbak.sh
 ec7c84bea348999d32f99315a91d31e6  ./binTools/e2freefrag
 7a1524bf800c0f1145c6f3f120047a92  ./binTools/flash_update
 012cff9e562552d280621bc290b5f387  ./binTools/mkfs.ext3
