@@ -85,6 +85,7 @@ if len(boot_time_data) <= 0:
     
 print("Start draw pic...")
 
+plt.style.use("fast")
 fig, axs = plt.subplots(rows,cols,figsize=(rows * 5, cols * 8))
 
 for j in range(cols):
@@ -95,7 +96,10 @@ for j in range(cols):
             ax = axs[i, j]
         else:
             ax = axs[i]
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
         ax.set_ylabel(configs["info"][j*rows+i]["y_name"])
+        ax.set_title(configs["info"][j*rows+i]["y_name"])
         ax.set_xlabel("TIME(min)")
         for root_flag in reboot_flag:
             ax.axvline(x=root_flag, color=(0,0,0.5), linestyle='--',linewidth=1)
@@ -125,6 +129,6 @@ for j in range(cols):
         ax.yaxis.set_major_locator(MaxNLocator(min(20, 40)))
         ax.autoscale_view()
         ax.grid(True)
-plt.tight_layout()
-plt.savefig(args.log + ".png")
-print("write pic to file: ", args.log + ".png")
+fig.tight_layout(pad=3.0)
+print("write pic to file: ", args.log + ".png ...")
+fig.savefig(args.log + ".png", dpi=300, bbox_inches="tight", transparent=False)

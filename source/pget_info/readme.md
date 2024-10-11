@@ -51,4 +51,7 @@ python3 get_info_log_to_png.py --config get_info_log_to_png.yaml --log get_info.
 
 ```
 
-将上述`get_info.sh`生成的log文件输出为图形化的png图表，详细配置可参考文件`get_info_log_to_png.yaml`
+将上述`get_info.sh`生成的log文件输出为图形化的png图表，详细配置可参考文件`get_info_log_to_png.yaml`，生成实例如下
+
+![实例图像](get_info.log.png)
+

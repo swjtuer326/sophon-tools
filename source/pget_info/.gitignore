@@ -40,3 +40,4 @@ __pycache__
 *.html
 *.1
 output
+!ex_get_info.log.png
