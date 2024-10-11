@@ -41,7 +41,9 @@ sudo bash get_info.sh server <log file> <loop time> y
 
 ```
 
-自动启动一个后台服务，每隔\<loop time\>时间获取一次信息到文件<log file>
+自动启动一个后台服务，每隔\<loop time\>时间获取一次信息到文件<log file>，使用并配置开机自启的实例视频如下
+
+https://github.com/user-attachments/assets/819bf5cd-c619-41b9-9e88-1c4dcba9c70a
 
 ### get_info_log_to_png.py
 
