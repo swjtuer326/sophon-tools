@@ -20,14 +20,7 @@
 
 本功能84&4和1688/186平台使用方式完全一致
 
-使用如下命令下载打包需要使用的工具
-
-``` bash
-pip3 install dfss --upgrade
-python3 -m dfss --dflag=socbak
-```
-
-下载的文件是一个socbak.zip文件
+请在本仓库release页面下载最新的socbak.zip文件
 
 将外置存储插入目标设备，然后执行如下操作
 
@@ -71,4 +64,6 @@ root@sophon:/socrepack/socbak# tree -L 1
 
 其中socbak_log.log文件是执行的信息记录，刷机包在output/sdcard/路径下
 
+## 实例视频
 
+https://github.com/user-attachments/assets/97f754e1-c575-4859-aaf8-8e9d60daeba9
