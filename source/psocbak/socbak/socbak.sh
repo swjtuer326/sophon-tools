@@ -46,7 +46,7 @@ export PIGZ=-1
 
 chmod +x ${TGZ_FILES_PATH}/binTools
 export PATH="${TGZ_FILES_PATH}/binTools":$PATH
-# find ./ -type f | grep -vE "md5.txt|\.log|output|\.bin|\.tgz" | xargs md5sum > socbak_md5.txt
+# find ./ -type f | grep -vE "md5.txt|\.log|output|sparse|\.bin|\.tgz" | xargs md5sum > socbak_md5.txt
 pushd "${TGZ_FILES_PATH}"
 md5sum -c "${TGZ_FILES_PATH}/socbak_md5.txt"
 if [[ "$?" != "0" ]]; then
@@ -261,7 +261,7 @@ function socbak_gen_partition_subimg()
 	rm ./sparse-file* &>/dev/null
 	rm ./sparse-path* -rf &>/dev/null
 	echo "INFO: creat partition($1) size: $((${2})) B ..." | tee -a $SOCBAK_LOG_PATH
-	dd if=/dev/zero of="sparse-file-$1" bs=1 count=1 seek=$((${2}))
+	dd if=/dev/zero of="sparse-file-$1" bs=$((1024 * 4)) count=$(($2 / 1024 / 4)) conv=notrunc status=progress
 	if [[ "$?" != "0" ]]; then echo "ERROR: dd $1 error, exit." | tee -a $SOCBAK_LOG_PATH; socbak_cleanup; fi
 	if [[ "$3" == "fat" ]]; then
 		mkfs.fat "sparse-file-$1"
@@ -371,6 +371,10 @@ if [[ "${ALL_IN_ONE_FLAG}" != "" ]] && [[ "${ALL_IN_ONE_SCRIPT}" != "" ]]; then
 				part_size_max=$(($part_size_max * 2))
 			;;
 		esac
+		fixsize=$(( ${TGZ_FILES_SIZE[$TGZ_FILE]} * 1024))
+		if [ $part_size_max -lt $fixsize ]; then
+			part_size_max=${fixsize}
+		fi
 		socbak_gen_partition_subimg "$TGZ_FILE" "$part_size_max" "$partition_format" 
 		advmv -g "sparse-file-$TGZ_FILE" output
 	done
@@ -499,7 +503,7 @@ function socbak_allinone_pack()
 			echo "INFO: part_name:$1 part_number:$2 part_format:$3 resize_flag:$4 RECOVERY_DIR:$RECOVERY_DIR"
 			have_flag=0
 			if [ ! -f sparse-file-$1 ]; then
-				dd if=/dev/zero of=$RECOVERY_DIR/$1 bs=${SECTOR_BYTES} count=${PART_SIZE_IN_SECTOR[$2]}
+				dd if=/dev/zero of=$RECOVERY_DIR/$1 bs=${SECTOR_BYTES} count=${PART_SIZE_IN_SECTOR[$2]} conv=notrunc status=progress
 				if [ $3 -eq 1 ]; then
 					mkfs.fat $RECOVERY_DIR/$1
 				elif [ $3 -eq 2 ]; then
@@ -507,11 +511,7 @@ function socbak_allinone_pack()
 				fi
 				have_flag=0
 			else
-				ln "sparse-file-$1" $RECOVERY_DIR/$1
-				if [[ "$?" != "0" ]]; then
-					echo "WARNING: ln return error, start cp..."
-					advcp -g "sparse-file-$1" $RECOVERY_DIR/$1
-				fi
+				advmv -g "sparse-file-$1" $RECOVERY_DIR/$1
 			fi
 			if [[ "$3" == "2" ]]; then
 				e2fsck -f -p $RECOVERY_DIR/$1
