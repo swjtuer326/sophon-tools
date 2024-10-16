@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from matplotlib.ticker import AutoLocator, ScalarFormatter, MaxNLocator
 import yaml
 import argparse
@@ -7,6 +8,8 @@ import math
 from decimal import Decimal, getcontext
 
 getcontext().prec = 50
+
+colors=list(mcolors.TABLEAU_COLORS.keys())
 
 parser = argparse.ArgumentParser(description="get info log file to png")
 parser.add_argument('--config', type=str, help='Path to the configuration file')
@@ -46,7 +49,6 @@ with open(log_name,'r') as file:
                 if ost_time < boot_ost_time_data[len(boot_ost_time_data)-1]:
                     basic_time=boot_time_data[len(boot_time_data)-1]
                     reboot_flag.append(basic_time)
-
             boot_ost_time_data.append(ost_time)
             boot_time_data.append(curr_time)
         for item in configs["info"]:
@@ -82,11 +84,15 @@ print("cols:", cols)
 if len(boot_time_data) <= 0:
     print("BOOT TIME is Empty!!!!")
     exit(-1)
-    
+
+basic_time=boot_time_data[0]
+boot_time_data=[x - basic_time for x in boot_time_data]
+reboot_flag=[x - basic_time for x in reboot_flag]
+
 print("Start draw pic...")
 
 plt.style.use("fast")
-fig, axs = plt.subplots(rows,cols,figsize=(rows * 5, cols * 8))
+fig, axs = plt.subplots(rows,cols,figsize=(rows * 8, cols * 8))
 
 for j in range(cols):
     for i in range(rows):
@@ -96,17 +102,6 @@ for j in range(cols):
             ax = axs[i, j]
         else:
             ax = axs[i]
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.set_ylabel(configs["info"][j*rows+i]["y_name"])
-        ax.set_title(configs["info"][j*rows+i]["y_name"])
-        ax.set_xlabel("TIME(min)")
-        for root_flag in reboot_flag:
-            ax.axvline(x=root_flag, color=(0,0,0.5), linestyle='--',linewidth=1)
-        if configs["info"][j*rows+i].get("y_flag") is not None:
-            for item in configs["info"][j*rows+i].get("y_flag"):
-                ax.axhline(y=item, color='red', linestyle=':', linewidth=1)
-                ax.text(0, item, f'{item:.1f}', color='red', fontsize=8, verticalalignment='top', horizontalalignment='left')
         data_temp = infos_data[configs["info"][j*rows+i]["name"]]
         if len(data_temp) < len(boot_time_data):
             print("Warring: data num is: ", len(data_temp), "and boot time num is: ", len(boot_time_data))
@@ -117,18 +112,37 @@ for j in range(cols):
                 if configs["info"][j*rows+i].get("min") is not None:
                     data = max(data , configs["info"][j*rows+i]["min"])
                 data_temp.append(data)
-        ax.scatter(boot_time_data, data_temp, s=configs["point_size"], color=("green"))
-        ax.xaxis.set_major_locator(AutoLocator())
-        ax.xaxis.set_major_formatter(ScalarFormatter(useOffset=False))
-        ax.yaxis.set_major_locator(AutoLocator())
-        ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
+        ax.set_xlim(left=boot_time_data[0], right=boot_time_data[-1])
+        ax.scatter(boot_time_data, data_temp, s=configs["point_size"], color=("green"), label=configs["info"][j*rows+i]["y_name"])
         if configs["info"][j*rows+i].get("min") is not None:
             ax.set_ylim(bottom = configs["info"][j*rows+i].get("min"))
         if configs["info"][j*rows+i].get("max") is not None:
             ax.set_ylim(top = configs["info"][j*rows+i].get("max"))
         ax.yaxis.set_major_locator(MaxNLocator(min(20, 40)))
+        ax.xaxis.set_major_locator(AutoLocator())
+        ax.xaxis.set_major_formatter(ScalarFormatter(useOffset=False))
+        ax.yaxis.set_major_locator(AutoLocator())
+        ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
+        reboot_label_flag=0
+        for root_flag in reboot_flag:
+            if reboot_label_flag == 0:
+                ax.axvline(x=root_flag, color='red', linestyle='--', linewidth=1, label=f'reboot flag')
+            else:
+                ax.axvline(x=root_flag, color='red', linestyle='--', linewidth=1)
+        if configs["info"][j*rows+i].get("y_flag") is not None:
+            y_flag_count=0
+            for item in configs["info"][j*rows+i].get("y_flag"):
+                ax.axhline(y=item, color=mcolors.TABLEAU_COLORS[colors[y_flag_count]], alpha=0.3, linewidth=3, label=f'{item:.1f}')
+                y_flag_count=y_flag_count+1
+        ax.spines['top'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.set_ylabel(configs["info"][j*rows+i]["y_name"])
+        ax.set_title(configs["info"][j*rows+i]["y_name"])
+        ax.set_xlabel("TIME(min)")
+        ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
         ax.autoscale_view()
         ax.grid(True)
-fig.tight_layout(pad=3.0)
+fig.tight_layout()
 print("write pic to file: ", args.log + ".png ...")
-fig.savefig(args.log + ".png", dpi=300, bbox_inches="tight", transparent=False)
+fig.savefig(args.log + ".png", dpi=200, transparent=False)
