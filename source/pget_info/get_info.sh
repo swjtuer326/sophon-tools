@@ -39,6 +39,10 @@ function od_read_dec_big() {
     od -An --endian=big -v -j ${1} -N ${2} -t u -w${2} ${3} 2>/dev/null | sed 's| \\0| |g' | sed 's| \\n| |g' | sed 's| \\r| |g' | tr -d ' '
 }
 
+function sudo_write_to_file() {
+    sudo echo "$2" | tee "$1" &>/dev/null
+}
+
 # [i2c bus] [i2c addr(HEX)]
 function get_i2c_dev_ok() {
     i2c_bus=$1
@@ -217,33 +221,33 @@ file_validate /proc/cpuinfo
 file_validate /proc/stat
 
 if [[ "$1" == "server" ]] && [[ ! "$2" == "" ]] && [[ ! "$3" == "" ]]; then
-	log_file="$(readlink -f "$2")"
-	loop_wait_time="$3"
-	get_info_pwd="$(readlink -f "$0")"
-	echo "log write to file:${log_file}"
-	echo "wait time in loop(s):${loop_wait_time}"
-	echo "get_info pwd:${get_info_pwd}"
-	if [[ "$4" == "y" ]]; then
-		systemctl stop sophon-get-info-server.service
-		systemctl reset-failed sophon-get-info-server.service
-		systemd-run --unit=sophon-get-info-server /usr/bin/bash -c "source /etc/profile; ldconfig; while true; do sleep ${loop_wait_time}; bash ${get_info_pwd} 2>/dev/null 1>> ${log_file}; done;"
-		sleep 3
-		systemctl status sophon-get-info-server.service --no-page -l
-		exit 0
-	fi
-	read -p "Do you acknowledge the information above? (y/n) " -n 1 -r
-	echo ""
-	if [[ $REPLY =~ ^[Yy]$ ]]
-	then
-		systemctl stop sophon-get-info-server.service
-		systemctl reset-failed sophon-get-info-server.service
-		systemd-run --unit=sophon-get-info-server /usr/bin/bash -c "source /etc/profile; ldconfig; while true; do sleep ${loop_wait_time}; bash ${get_info_pwd} 2>/dev/null 1>> ${log_file}; done;"
-		sleep 3
-		systemctl status sophon-get-info-server.service --no-page -l
-		exit 0
-	else
-		exit -1
-	fi
+        log_file="$(readlink -f "$2")"
+        loop_wait_time="$3"
+        get_info_pwd="$(readlink -f "$0")"
+        echo "log write to file:${log_file}"
+        echo "wait time in loop(s):${loop_wait_time}"
+        echo "get_info pwd:${get_info_pwd}"
+        if [[ "$4" == "y" ]]; then
+                systemctl stop sophon-get-info-server.service
+                systemctl reset-failed sophon-get-info-server.service
+                systemd-run --unit=sophon-get-info-server /usr/bin/bash -c "source /etc/profile; ldconfig; while true; do sleep ${loop_wait_time}; bash ${get_info_pwd} 2>/dev/null 1>> ${log_file}; done;"
+                sleep 3
+                systemctl status sophon-get-info-server.service --no-page -l
+                exit 0
+        fi
+        read -p "Do you acknowledge the information above? (y/n) " -n 1 -r
+        echo ""
+        if [[ $REPLY =~ ^[Yy]$ ]]
+        then
+                systemctl stop sophon-get-info-server.service
+                systemctl reset-failed sophon-get-info-server.service
+                systemd-run --unit=sophon-get-info-server /usr/bin/bash -c "source /etc/profile; ldconfig; while true; do sleep ${loop_wait_time}; bash ${get_info_pwd} 2>/dev/null 1>> ${log_file}; done;"
+                sleep 3
+                systemctl status sophon-get-info-server.service --no-page -l
+                exit 0
+        else
+                exit -1
+        fi
 fi
 
 # BOOT_TIME(S)
@@ -446,8 +450,8 @@ DEVICE_SN=""
 if [[ "${WORK_MODE}" == "SOC" ]]; then
     if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
         # CHIP_SN=$(grep "product sn" /sys/class/i2c-dev/i2c-1/device/1-0017/information 2>/dev/null | awk -F'"' '{print $4}')
-	CHIP_SN=$(od_read_char 0 32 "/sys/bus/nvmem/devices/1-006a0/nvmem")
-	DEVICE_SN=$(od_read_char 512 32 "/sys/bus/nvmem/devices/1-006a0/nvmem")
+        CHIP_SN=$(od_read_char 0 32 "/sys/bus/nvmem/devices/1-006a0/nvmem")
+        DEVICE_SN=$(od_read_char 512 32 "/sys/bus/nvmem/devices/1-006a0/nvmem")
     elif [[ "${CPU_MODEL}" == "bm1688" ]] || [[ "${CPU_MODEL}" == "cv186ah" ]]; then
         CHIP_SN=$(od_read_char 0 32 "/dev/mmcblk0boot1")
         DEVICE_SN=$(od_read_char 32 32 "/dev/mmcblk0boot1")
@@ -463,27 +467,41 @@ if [[ "${WORK_MODE}" == "SOC" ]]; then
 fi
 
 # CHIP_TEMP
-CHIP_TEMP=""
+declare -i CHIP_TEMP=0
 if [[ "${WORK_MODE}" == "SOC" ]]; then
     CHIP_TEMP=$(cat /sys/class/thermal/thermal_zone0/temp | tr -d '\0')
     CHIP_TEMP=$(( CHIP_TEMP / 1000 ))
 fi
 
 # BOARD_TEMP
-BOARD_TEMP=""
+declare -i BOARD_TEMP=0
 if [[ "${WORK_MODE}" == "SOC" ]]; then
-	if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-		declare -i BOARD_TEMP
-  		BOARD_TEMP=$(cat /sys/class/thermal/thermal_zone1/temp | tr -d '\0')
-		BOARD_TEMP=$(( BOARD_TEMP / 1000 ))
-	fi
+        if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
+                BOARD_TEMP=$(cat /sys/class/thermal/thermal_zone1/temp | tr -d '\0')
+                BOARD_TEMP=$(( BOARD_TEMP / 1000 ))
+        fi
+fi
+
+# FAN_FREQUENCY
+declare -i FAN_FREQUENCY=0
+declare -i FAN_RPM=0
+if [[ "${WORK_MODE}" == "SOC" ]]; then
+        if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
+                sudo_write_to_file /sys/class/bm-tach/bm-tach-0/enable 1
+                FAN_FREQUENCY=$(cat /sys/class/bm-tach/bm-tach-0/fan_speed | sed 's|fan_speed:||g')
+                if [[ "$FAN_FREQUENCY" != "0" ]]; then
+                        FAN_RPM=$(echo | awk "{printf \"%.0f\n\", 60 / (1 / $FAN_FREQUENCY * 2) }" 2>/dev/null)
+                else
+                        FAN_RPM=0
+                fi
+        fi
 fi
 
 # DTS_THERMAL_TEMP
 DTS_THERMAL_TEMP=""
 if [[ "${WORK_MODE}" == "SOC" ]]; then
     if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-    	declare -i num
+        declare -i num
         temp=$(od_read_dec_big 0 32 /proc/device-tree/thermal-zones/soc/trips/soc_tpuclk440m_trip/temperature)
         temp=$(($temp / 1000))
         DTS_THERMAL_TEMP="$temp"
@@ -502,7 +520,7 @@ VTPU_VOLTAGE=""
 VDDC_POWER=""
 VDDC_VOLTAGE=""
 if [[ "${WORK_MODE}" == "SOC" ]]; then
-	if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
+        if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
         PMBUS_INFO=""
         if [[ "$(get_i2c_dev_ok 0 50)" == "ok" ]]; then
             PMBUS_INFO=$(pmbus -d 0 -s 0x50 -i 2>/dev/null)
@@ -513,20 +531,20 @@ if [[ "${WORK_MODE}" == "SOC" ]]; then
         VTPU_VOLTAGE=$(echo "$PMBUS_INFO" | grep " output voltage:" | awk 'NR % 2 == 1' | awk '{print $4}' | tr -d 'm' | tr -d 'V')
         VDDC_POWER=$(echo "$PMBUS_INFO" | grep " output power:" | awk 'NR % 2 == 0' | awk '{print $4}' | tr -d 'W')
         VDDC_VOLTAGE=$(echo "$PMBUS_INFO" | grep " output voltage:" | awk 'NR % 2 == 0' | awk '{print $4}' | tr -d 'm' | tr -d 'V')
-	fi
+        fi
 fi
 
 # V12_POWER
 V12_POWER=""
 if [[ "${WORK_MODE}" == "SOC" ]]; then
-	if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-		pw_h=$(i2cget -f -y 1 0x17 0x25)
-		pw_l=$(i2cget -f -y 1 0x17 0x24)
-		pw_dh=$((pw_h))
-		pw_dl=$((pw_l))
-		pw_dh_256=$(($pw_dh * 256))
-		V12_POWER=$(($pw_dh_256 + $pw_dl))
-	fi
+        if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
+                pw_h=$(i2cget -f -y 1 0x17 0x25)
+                pw_l=$(i2cget -f -y 1 0x17 0x24)
+                pw_dh=$((pw_h))
+                pw_dl=$((pw_l))
+                pw_dh_256=$(($pw_dh * 256))
+                V12_POWER=$(($pw_dh_256 + $pw_dl))
+        fi
 fi
 
 # TPU_USAGE
@@ -657,7 +675,7 @@ if [[ "${WORK_MODE}" == "PCIE" ]]; then
             eval "CARD${i}_DDR_FREQ+='$(cat /proc/bmsophon/card${i}/bmsophon${k}/clk | grep ^ddr: | awk '{print $2}') '"
             eval "CARD${i}_TPU_USAGE+='$(cat /sys/class/bm-sophon/bm-sophon${k}/device/npu_usage | awk -F':' '{print $2}' | awk '{print $1}') '"
             eval "CARD${i}_VPU_USAGE+='$(cat /proc/bmsophon/card${i}/bmsophon${k}/media | tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/,$//'; echo ' ')'"
-			eval "CARD${i}_JPU_USAGE+='$(cat /proc/bmsophon/card${i}/bmsophon${k}/jpu | tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/,$//'; echo ' ')'"
+                        eval "CARD${i}_JPU_USAGE+='$(cat /proc/bmsophon/card${i}/bmsophon${k}/jpu | tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/,$//'; echo ' ')'"
         done
         eval "CARD${i}_CHIP_DDR_SIZE=\$(echo \$CARD${i}_CHIP_DDR_SIZE | sed 's/ *$//')"
         eval "CARD${i}_CHIP_HEAP_SIZE=\$(echo \$CARD${i}_CHIP_HEAP_SIZE | sed 's/ *$//')"
@@ -668,7 +686,7 @@ if [[ "${WORK_MODE}" == "PCIE" ]]; then
         eval "CARD${i}_DDR_FREQ=\$(echo \$CARD${i}_DDR_FREQ | sed 's/ *$//')"
         eval "CARD${i}_TPU_USAGE=\$(echo \$CARD${i}_TPU_USAGE | sed 's/ *$//')"
         eval "CARD${i}_VPU_USAGE=\$(echo \$CARD${i}_VPU_USAGE | sed 's/ *$//')"
-		eval "CARD${i}_JPU_USAGE=\$(echo \$CARD${i}_JPU_USAGE | sed 's/ *$//')"
+                eval "CARD${i}_JPU_USAGE=\$(echo \$CARD${i}_JPU_USAGE | sed 's/ *$//')"
     done
 fi
 
@@ -707,6 +725,8 @@ if [[ "${WORK_MODE}" == "SOC" ]]; then
     echo "ETH1_MAC|${ETH1_MAC}|"
     echo "CHIP_TEMP(degree Celsius)|${CHIP_TEMP}|"
     echo "BOARD_TEMP(degree Celsius)|${BOARD_TEMP}|"
+    echo "FAN_FREQUENCY(Hz)|${FAN_FREQUENCY}|"
+    echo "FAN_RPM(rpm)|${FAN_RPM}|"
     echo "DTS_THERMAL_TEMP(degree Celsius)|${DTS_THERMAL_TEMP}|"
     echo "VTPU_POWER(W)|${VTPU_POWER}|"
     echo "VTPU_VOLTAGE(mV)|${VTPU_VOLTAGE}|"
@@ -748,7 +768,7 @@ else
         eval "echo \"CARD${i}_DDR_FREQ(MHz)|\$CARD${i}_DDR_FREQ|\""
         eval "echo \"CARD${i}_TPU_USAGE(%)|\$CARD${i}_TPU_USAGE|\""
         eval "echo \"CARD${i}_VPU_USAGE(%)|\$CARD${i}_VPU_USAGE|\""
-		eval "echo \"CARD${i}_JPU_USAGE(%)|\$CARD${i}_JPU_USAGE|\""
+                eval "echo \"CARD${i}_JPU_USAGE(%)|\$CARD${i}_JPU_USAGE|\""
     done
     echo "DRIVER_RELEASE_VERSION|${DRIVER_RELEASE_VERSION}|"
     echo "DRIVER_RELEASE_TIME|${DRIVER_RELEASE_TIME}|"
@@ -761,5 +781,3 @@ else
     echo "CPUS_USAGE(%)|${CPUS_USAGE}|"
     echo "SYSTEM_MEM_USAGE(%)|${SYSTEM_MEM_USAGE}|"
 fi
-
-
