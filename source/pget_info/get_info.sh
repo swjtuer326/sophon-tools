@@ -473,7 +473,8 @@ fi
 BOARD_TEMP=""
 if [[ "${WORK_MODE}" == "SOC" ]]; then
 	if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-		BOARD_TEMP=$(cat /sys/class/thermal/thermal_zone1/temp | tr -d '\0')
+		declare -i BOARD_TEMP
+  		BOARD_TEMP=$(cat /sys/class/thermal/thermal_zone1/temp | tr -d '\0')
 		BOARD_TEMP=$(( BOARD_TEMP / 1000 ))
 	fi
 fi
