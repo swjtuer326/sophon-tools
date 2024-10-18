@@ -482,6 +482,7 @@ fi
 DTS_THERMAL_TEMP=""
 if [[ "${WORK_MODE}" == "SOC" ]]; then
     if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
+    	declare -i num
         temp=$(od_read_dec_big 0 32 /proc/device-tree/thermal-zones/soc/trips/soc_tpuclk440m_trip/temperature)
         temp=$(($temp / 1000))
         DTS_THERMAL_TEMP="$temp"
