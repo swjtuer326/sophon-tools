@@ -64,6 +64,8 @@ with open(log_name,'r') as file:
                     data = min(data , item["max"])
                 if item.get("min") is not None:
                     data = max(data , item["min"])
+                if item["name"] == "V12_POWER":
+                    data = data * 18 / 33
                 infos_data[item["name"]].append(data)
 
 def plan_square_frame(num_squares):
@@ -113,7 +115,7 @@ for j in range(cols):
                     data = max(data , configs["info"][j*rows+i]["min"])
                 data_temp.append(data)
         ax.set_xlim(left=boot_time_data[0], right=boot_time_data[-1])
-        ax.scatter(boot_time_data, data_temp, s=configs["point_size"], color=("green"), label=configs["info"][j*rows+i]["y_name"])
+        ax.scatter(boot_time_data, data_temp, s=configs["point_size"], color=("red"), label=configs["info"][j*rows+i]["y_name"])
         if configs["info"][j*rows+i].get("min") is not None:
             ax.set_ylim(bottom = configs["info"][j*rows+i].get("min"))
         if configs["info"][j*rows+i].get("max") is not None:
@@ -126,9 +128,10 @@ for j in range(cols):
         reboot_label_flag=0
         for root_flag in reboot_flag:
             if reboot_label_flag == 0:
-                ax.axvline(x=root_flag, color='red', linestyle='--', linewidth=1, label=f'reboot flag')
+                ax.axvline(x=root_flag, color='green', linestyle='--', linewidth=1, label=f'reboot flag')
+                reboot_label_flag = 1
             else:
-                ax.axvline(x=root_flag, color='red', linestyle='--', linewidth=1)
+                ax.axvline(x=root_flag, color='green', linestyle='--', linewidth=1)
         if configs["info"][j*rows+i].get("y_flag") is not None:
             y_flag_count=0
             for item in configs["info"][j*rows+i].get("y_flag"):
@@ -142,7 +145,7 @@ for j in range(cols):
         ax.set_xlabel("TIME(min)")
         ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
         ax.autoscale_view()
-        ax.grid(True)
+        ax.grid(True, alpha=0.5)
 fig.tight_layout()
 print("write pic to file: ", args.log + ".png ...")
 fig.savefig(args.log + ".png", dpi=200, transparent=False)
