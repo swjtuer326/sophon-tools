@@ -20,6 +20,7 @@
 | qt_memory_edit | source/pqt_memory_edit | 否 | 图形化的远程修改设备内存布局的工具 |
 | qt_batch_deployment | source/pqt_batch_deployment | 否 | 基于SSH的批量部署工具 |
 | dfss_cpp | source/pdfss_cpp | 否 | DFSS工具CPP工程 |
+| spacc_efuse_demo | source/pspacc_efuse_demo | 否 | efuse+spacc加解密Demo |
 
 ## 编译方式
 
