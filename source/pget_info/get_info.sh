@@ -36,7 +36,12 @@ function od_read_hex() {
 }
 
 function od_read_dec_big() {
-    od -An --endian=big -v -j ${1} -N ${2} -t u -w${2} ${3} 2>/dev/null | sed 's| \\0| |g' | sed 's| \\n| |g' | sed 's| \\r| |g' | tr -d ' '
+    info=$(od -An --endian=big -v -j ${1} -N ${2} -t u -w${2} ${3} 2>/dev/null | sed 's| \\0| |g' | sed 's| \\n| |g' | sed 's| \\r| |g' | tr -d ' ')
+    if [[ "$info" == "" ]]; then
+        echo "0"
+    else
+        echo "$info"
+    fi
 }
 
 function sudo_write_to_file() {
@@ -781,3 +786,4 @@ else
     echo "CPUS_USAGE(%)|${CPUS_USAGE}|"
     echo "SYSTEM_MEM_USAGE(%)|${SYSTEM_MEM_USAGE}|"
 fi
+
