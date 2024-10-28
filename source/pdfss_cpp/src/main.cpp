@@ -439,7 +439,13 @@ int64_t sftp_get_file(struct ServerInfo* server, string path) {
 #else
   close(sock);
 #endif
-  return total_downloaded;
+  if (file_size == total_downloaded) {
+    log_debug("get file %s ok", path.c_str());
+    return total_downloaded;
+  } else {
+    log_error("Failed to download file: %s", path.c_str());
+    return -1;
+  }
 }
 
 std::streamsize get_file_size(const std::string& file_path) {
@@ -642,6 +648,13 @@ int64_t sftp_put_file(struct ServerInfo* server, string local_path,
   close(sock);
 #endif
   return total_upload;
+  if (file_size == total_upload) {
+    log_debug("put file %s ok", local_path.c_str());
+    return total_upload;
+  } else {
+    log_error("Failed to upload file: %s", local_path.c_str());
+    return -1;
+  }
 }
 
 bool is_sftp_service(ServerInfo* server_in) {
