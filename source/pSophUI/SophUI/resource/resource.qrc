@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>bg.png</file>
+        <file>en_US.ts</file>
+        <file>en_US.qm</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,17 @@
+[Unit]
+Description=Sophon HDMI Service
+After=bmrt_setup.service network.target
+
+[Service]
+User=root
+ExecStart=/bm_services/SophonHDMI/run_hdmi_show.sh
+ExecReload=/bin/kill -HUP $MAINPID
+WorkingDirectory=/bm_services/SophonHDMI/
+KillMode=control-group 
+Restart=on-failure
+RestartPreventExitStatus=200
+Type=simple
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

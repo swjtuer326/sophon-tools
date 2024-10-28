@@ -21,6 +21,7 @@
 | qt_batch_deployment | source/pqt_batch_deployment | 否 | 基于SSH的批量部署工具 |
 | dfss_cpp | source/pdfss_cpp | 否 | DFSS工具CPP工程 |
 | spacc_efuse_demo | source/pspacc_efuse_demo | 否 | efuse+spacc加解密Demo |
+| SophUI | source/pSophUI | 否 | HDMI配网页面工程 |
 
 ## 编译方式
 
