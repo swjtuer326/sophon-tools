@@ -45,7 +45,7 @@ border-image: url(:/new/prefix1/bg.png);
          <string notr="true">color: rgb(211, 215, 207);</string>
         </property>
         <property name="text">
-         <string>TIME                                                                    </string>
+         <string>TIME</string>
         </property>
         <property name="textFormat">
          <enum>Qt::AutoText</enum>
