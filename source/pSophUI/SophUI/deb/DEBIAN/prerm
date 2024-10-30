@@ -1,0 +1,8 @@
+#!/bin/bash
+CPU_MODEL=$(awk -F': ' '/model name/{print $2; exit}' /proc/cpuinfo)
+if [ "$CPU_MODEL" == "bm1688" ] || [ "$CPU_MODEL" == "cv186ah" ];then
+        sudo systemctl stop SophonHDMI > /dev/null | true
+        exit 0
+fi
+sudo systemctl stop SophonHDMI > /dev/null | true
+sudo systemctl stop SophonHDMIStatus > /dev/null | true
