@@ -108,7 +108,7 @@ if [[ "${FILESYSTEM}" != "ext4" ]]; then
 	echo "You can format the external storage to ext4 format according to the content at https://developer.sophgo.com/thread/758.html."
 fi
 
-if [[ "${FILESYSTEM}" != "vfat" ]] || [[ "${FILESYSTEM}" != "fat" ]]; then
+if [[ "${FILESYSTEM}" == "vfat" ]] || [[ "${FILESYSTEM}" == "fat" ]]; then
     echo "ERROR: filesystem ${FILESYSTEM} is not supported to use socbak, please look at infomation above!" | tee -a $SOCBAK_LOG_PATH
     exit -1
 fi
