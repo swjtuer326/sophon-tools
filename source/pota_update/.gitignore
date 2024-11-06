@@ -1,0 +1,38 @@
+# Distribution / packaging
+build/
+build_soc/
+data/
+images/
+models/
+output/*
+!.gitkeep
+*.user
+*.zip
+*.tar
+*.tar.gz
+*.AppImage
+
+
+# Model file
+*.mlir
+*.onnx
+*.pt
+*.pth
+*.prototxt
+*.profile
+*.bmodel.json
+*.bmodel
+
+# VSCode settings
+.vscode
+
+# OSX dir files
+.DS_Store
+__MACOSX/
+
+# web tools
+node_modules/
+yarn.lock
+package-lock.json
+
+__pycache__
