@@ -341,6 +341,11 @@ fi
 echo Program fip.bin done
 " >> $OTA_UPDATE_SCRIPT_FILE
 fi
+
+echo "
+led status off;sleep 0.2;led status on;sleep 0.2;led status off;sleep 0.2;led status on;sleep 0.2;led status off
+" >> $OTA_UPDATE_SCRIPT_FILE
+
 for ((item = 0; item < ${#OTA_EMMC_FILES[@]}; item++)); do
     filename=${OTA_EMMC_FILES[$item]}
 echo "
@@ -364,8 +369,11 @@ led status off
 led error off
 while true; do; echo \"ERROR: eMMC write failed\"; sleep 0.5; done; fi;
 echo
-
 echo Program $filename done
+" >> $OTA_UPDATE_SCRIPT_FILE
+
+echo "
+led status off;sleep 0.2;led status on;sleep 0.2;led status off;sleep 0.2;led status on;sleep 0.2;led status off;
 " >> $OTA_UPDATE_SCRIPT_FILE
 
 done
