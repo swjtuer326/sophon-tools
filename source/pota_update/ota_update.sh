@@ -372,10 +372,14 @@ echo
 echo Program $filename done
 " >> $OTA_UPDATE_SCRIPT_FILE
 
-echo "
+    echo "
 led status off;sleep 0.2;led status on;sleep 0.2;led status off;sleep 0.2;led status on;sleep 0.2;led status off;
 " >> $OTA_UPDATE_SCRIPT_FILE
 
+if [[ "$(($item % 10))" == "0" ]]; then
+    echo "
+bm_savelog mmc 0:1 ota_update_$(($item / 10)).log" >> $OTA_UPDATE_SCRIPT_FILE
+fi
 done
 
 echo "$flash_post_str" >> $OTA_UPDATE_SCRIPT_FILE
