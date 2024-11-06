@@ -216,7 +216,7 @@ OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a ^load | awk -F' ' '{print 
 OTA_FIP_FLASH_OFFSET=()
 OTA_FIP_FLASH_SIZE=()
 IFS=$'\n'
-for item in $(cat $OTA_FIP_UPDATE_CMD_FILE | grep ^mmc | grep write); do
+for item in $(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a ^mmc | grep write); do
     if [[ -z "$item" ]]; then
         continue
     fi
