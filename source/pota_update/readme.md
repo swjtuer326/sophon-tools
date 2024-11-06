@@ -28,9 +28,9 @@
 3. 检查目录格式是否类似这个
 
     ```bash
-    linaro@bm1684:/data/ota_new$ ls
+    linaro@bm1684:/xxxxx$ ls
     ota_update.sh  sdcard
-    linaro@bm1684:/data/ota_new$ ls sdcard/
+    linaro@bm1684:/xxxxx$ ls sdcard/
     BOOT                boot_emmc-opt.scr        data.12-of-58.gz  data.25-of-58.gz  data.38-of-58.gz  data.50-of-58.gz  gpt.gz              rootfs.12-of-32.gz  rootfs.25-of-32.gz  rootfs.9-of-32.gz
     boot.1-of-2.gz      boot_emmc-recovery.cmd   data.13-of-58.gz  data.26-of-58.gz  data.39-of-58.gz  data.51-of-58.gz  md5.txt             rootfs.13-of-32.gz  rootfs.26-of-32.gz  rootfs_rw.1-of-2.gz
     boot.2-of-2.gz      boot_emmc-recovery.scr   data.14-of-58.gz  data.27-of-58.gz  data.4-of-58.gz   data.52-of-58.gz  misc.1-of-1.gz      rootfs.14-of-32.gz  rootfs.27-of-32.gz  rootfs_rw.2-of-2.gz
@@ -46,10 +46,11 @@
     boot_emmc-misc.scr  data.10-of-58.gz         data.23-of-58.gz  data.36-of-58.gz  data.49-of-58.gz  data.9-of-58.gz   rootfs.10-of-32.gz  rootfs.23-of-32.gz  rootfs.7-of-32.gz
     boot_emmc-opt.cmd   data.11-of-58.gz         data.24-of-58.gz  data.37-of-58.gz  data.5-of-58.gz   fip.bin           rootfs.11-of-32.gz  rootfs.24-of-32.gz  rootfs.8-of-32.gz
     ```
-4. 以root账户身份执行ota_update.sh脚本，比如命令`sudo bash ota_update.sh`
+4. 尽可能得关闭业务，尤其是占用最后一个分区的业务或服务。
+5. 以root账户身份执行ota_update.sh脚本，比如命令`sudo bash ota_update.sh`
 
     ```bash
-    linaro@bm1684:/data/ota_new$ sudo bash ota_update.sh 
+    linaro@bm1684:/xxxxx$ sudo bash ota_update.sh 
     Running as unit: sophon-ota-update.service
     Unit sophon-ota-update.service could not be found.
     [INFO] ota server started, check status use: "systemctl status sophon-ota-update.service --no-page -l"
@@ -60,10 +61,10 @@
     [WARRNING] ota server will resize last partition on emmc, if error, please check emmc partitions
     [WARRNING] ota server will stop docker server and all program on last partition
     ```
-5. 等待文件`/dev/shm/ota_sucess_flag`或`/dev/shm/ota_error_flag`的创建。
+6. 等待文件`/dev/shm/ota_sucess_flag`或`/dev/shm/ota_error_flag`的创建。
 
     1. OTA服务的日志会存放到`/dev/shm/ota_shell.sh.log`中，日志文件会有所有的log，可以用命令`sudo tail -f /dev/shm/ota_shell.sh.log`监控该文件的最新变更
     2. OTA服务会停止docker服务
     3. OTA服务会杀死所有依赖最后一个分区的进程，所以当前终端被杀死是有概率发生的
-6. 如果文件`/dev/shm/ota_sucess_flag`被创建，则重启设备即可开始刷机，刷机完成后设备会自动重启。
-7. 如果文件`/dev/shm/ota_error_flag`被创建，需要检查emmc上分区表和最后一个分区的数据是否完整。然后检查`/dev/shm/ota_shell.sh.log`文件中的报错信息。
+7. 如果文件`/dev/shm/ota_sucess_flag`被创建，则重启设备即可开始刷机，刷机完成后设备会自动重启。
+8. 如果文件`/dev/shm/ota_error_flag`被创建，需要检查emmc上分区表和最后一个分区的数据是否完整。然后检查`/dev/shm/ota_shell.sh.log`文件中的报错信息。
