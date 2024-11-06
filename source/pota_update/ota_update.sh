@@ -62,18 +62,17 @@ SHELL_FILE="$(readlink -f "${BASH_SOURCE[0]}")"
 if [[ "$SHELL_FILE" != "${DDR_SHELL_FILE}"  ]]; then
     rm -f "${DDR_SHELL_FILE}"
     cp "$SHELL_FILE" "${DDR_SHELL_FILE}"
+    chmod +x "${DDR_SHELL_FILE}"
     cd /
-    if [ $(systemd --version | grep ^systemd | head -n1 | awk '{print $NF}') -le 232 ]; then
-        # systemctl stop sophon-ota-update.service
-        # systemctl reset-failed sophon-ota-update.service
-        # rm /run/systemd/transient/sophon-ota-update.service
-        # systemctl daemon-reload
+    # systemctl stop sophon-ota-update.service
+    # systemctl reset-failed sophon-ota-update.service
+    # rm /run/systemd/transient/sophon-ota-update.service
+    # systemctl daemon-reload
+    systemd-run --unit=sophon-ota-update.service --collect bash -c "${DDR_SHELL_FILE} $(dirname $SHELL_FILE)"
+    if [[ "$?" != "0" ]]; then
         systemd-run --unit=sophon-ota-update.service bash -c "${DDR_SHELL_FILE} $(dirname $SHELL_FILE)"
-    else
-        systemd-run --unit=sophon-ota-update.service --collect bash -c "${DDR_SHELL_FILE} $(dirname $SHELL_FILE)"
     fi
     systemctl status sophon-ota-update.service --no-page -l
-    rm -f "${DDR_SHELL_FILE}"
     echo '[INFO] ota server started, check status use: "systemctl status sophon-ota-update.service --no-page -l"'
     echo '[INFO] server log file: /dev/shm/ota_shell.sh.log'
     echo '[INFO] if ota sucess, file /dev/shm/ota_sucess_flag will be created'
@@ -88,6 +87,8 @@ fi
 LOGFILE="$(readlink -f "${BASH_SOURCE[0]}").log"
 rm -f $LOGFILE
 exec > >(tee -a "$LOGFILE") 2>&1
+
+echo "[INFO] ota update tool, version: v1.0.0"
 
 WORK_DIR="$1"
 echo "[INFO] work dir: $WORK_DIR"
