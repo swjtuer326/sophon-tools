@@ -68,3 +68,10 @@
     3. OTA服务会杀死所有依赖最后一个分区的进程，所以当前终端被杀死是有概率发生的
 7. 如果文件`/dev/shm/ota_sucess_flag`被创建，则重启设备即可开始刷机，刷机完成后设备会自动重启。
 8. 如果文件`/dev/shm/ota_error_flag`被创建，需要检查emmc上分区表和最后一个分区的数据是否完整。然后检查`/dev/shm/ota_shell.sh.log`文件中的报错信息。
+
+## 使用视频
+
+
+
+https://github.com/user-attachments/assets/2fc21f93-9656-4a67-bb39-91322be71814
+
