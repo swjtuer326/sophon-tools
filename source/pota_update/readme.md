@@ -19,7 +19,7 @@
 
 1. 准备sd卡卡刷包，且sd卡卡刷包可以正常刷机并启动新的系统
 2. 在执行刷机脚本前，emmc上最后一个分区（通常是data分区）需要有（刷机包大小+100MB）的空闲空间
-3. 系统中需要有如下命令："systemd" "systemd-run" "tee" "exec" "echo" "bc" "gdisk" "mkimage" "awk" "sed" "tr" "gzip"
+3. 系统中需要有如下命令："systemd" "systemd-run" "tee" "exec" "echo" "bc" "gdisk" "mkimage" "awk" "sed" "tr" "gzip" "dd" "sgdisk" "fdisk"
 
 ## 使用方式
 
