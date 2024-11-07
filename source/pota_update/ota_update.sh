@@ -33,6 +33,7 @@ rm -rf /dev/shm/ota_error_flag
 
 function panic()
 {
+    printenv >> "$LOGFILE"
     if [ $# -gt 0 ]; then
         echo "" >&1
         echo "[PANIC] $@" >&1
@@ -68,9 +69,9 @@ if [[ "$SHELL_FILE" != "${DDR_SHELL_FILE}"  ]]; then
     # systemctl reset-failed sophon-ota-update.service
     # rm /run/systemd/transient/sophon-ota-update.service
     # systemctl daemon-reload
-    systemd-run --unit=sophon-ota-update.service --collect bash -c "${DDR_SHELL_FILE} $(dirname $SHELL_FILE)"
+    systemd-run --unit=sophon-ota-update.service --collect bash -c "${DDR_SHELL_FILE} $(dirname $SHELL_FILE) ${LAST_PART_NOT_FLASH}"
     if [[ "$?" != "0" ]]; then
-        systemd-run --unit=sophon-ota-update.service bash -c "${DDR_SHELL_FILE} $(dirname $SHELL_FILE)"
+        systemd-run --unit=sophon-ota-update.service bash -c "${DDR_SHELL_FILE} $(dirname $SHELL_FILE) ${LAST_PART_NOT_FLASH}"
     fi
     systemctl status sophon-ota-update.service --no-page -l
     echo '[INFO] ota server started, check status use: "systemctl status sophon-ota-update.service --no-page -l"'
@@ -93,6 +94,14 @@ echo "[INFO] ota update tool, version: v1.0.0"
 WORK_DIR="$1"
 echo "[INFO] work dir: $WORK_DIR"
 cd $WORK_DIR
+
+if [[ "$2" == "LAST_PART_NOT_FLASH" ]]; then
+    LAST_PART_NOT_FLASH="1"
+    echo "[INFO] LAST_PART_NOT_FLASH mode enable"
+else
+    LAST_PART_NOT_FLASH="0"
+    echo "[INFO] LAST_PART_NOT_FLASH mode disable"
+fi
 
 function file_validate()
 {
@@ -127,9 +136,12 @@ md5sum -c ${md5file} &>> "$LOGFILE" || panic "md5 check error!!!"
 echo "[INFO] md5 check sucess"
 
 # 确定刷机包大小和刷机后占空空间
+echo "[INFO] check update size check start"
+printenv >> "$LOGFILE"
 xmlfile=$(find . -type f -name "partition*xml")
 OTA_NEW_PACKAGE_GPT_PART_SIZE_KB=$(cat ${xmlfile} | grep "<physical_partition " | awk -F'"' '{print $2}')
 OTA_NEW_ALL_PART_SIZE_KB=$(cat ${xmlfile} | grep "<partition " | awk -F'"' '{print $4}' | paste -sd+ - | bc)
+OTA_NEW_LAST_PACK_NAME=$(cat ${xmlfile} | grep "<partition " | tail -n1 | awk -F'"' '{print $2}' | tr '[:upper:]' '[:lower:]')
 OTA_GPT_TEMP_FILE="/dev/shm/ota_gpt"
 rm -f ${OTA_GPT_TEMP_FILE}
 gzip -cd gpt.gz > ${OTA_GPT_TEMP_FILE}
@@ -140,6 +152,7 @@ if [[ "$EMMC_SECTOR_B" != "$OTA_NEW_SECTOR_SIZE" ]]; then
     panic "get emmc sector size [$OTA_NEW_SECTOR_SIZE] not is default size [$EMMC_SECTOR_B], please check emmc and gdisk tool"
 fi
 OTA_NEW_GPT_END_SECTOR=$(gdisk -l ${OTA_GPT_TEMP_FILE} 2>&1 | tail -n1 | awk -F' ' '{print $3}')
+OTA_NEW_GPT_END_PART_START=$(gdisk -l ${OTA_GPT_TEMP_FILE} 2>&1 | tail -n1 | awk -F' ' '{print $2}')
 OTA_NEW_GPT_END_SIZE_KB=$(echo "$OTA_NEW_SECTOR_SIZE * $OTA_NEW_GPT_END_SECTOR / 1024" | bc)
 rm -f ${OTA_GPT_TEMP_FILE}
 OTA_NEW_MAX_SIZE_KB=0
@@ -153,6 +166,18 @@ if [ $OTA_NEW_MAX_SIZE_KB -lt $OTA_NEW_GPT_END_SIZE_KB ]; then
     OTA_NEW_MAX_SIZE_KB=$OTA_NEW_GPT_END_SIZE_KB
 fi
 OTA_PACK_SIZE_KB=$(ls -l --block-size=K | awk -F' ' '{print $5}' | tr -d 'K' | sed '/^$/d' | paste -sd+ - | bc)
+# 如果需要保留最后一个分区，则判断新旧分区表最后一个分区的起始点是否相同
+if [[ "$LAST_PART_NOT_FLASH" == "1" ]]; then
+    OTA_OLD_GPT_END_PART_START=$(gdisk -l /dev/mmcblk0 2>&1 | tail -n 1 | awk '{print $2}')
+    if [[ "$OTA_OLD_GPT_END_PART_START" != "$OTA_NEW_GPT_END_PART_START" ]] || [[ "$OTA_NEW_GPT_END_PART_START" == "" ]]; then
+        panic "LAST_PART_NOT_FLASH mode, check last part start [$OTA_NEW_GPT_END_PART_START] != [$OTA_OLD_GPT_END_PART_START]"
+    fi
+    echo "[INFO] LAST_PART_NOT_FLASH mode, check last part start [$OTA_NEW_GPT_END_PART_START] = [$OTA_OLD_GPT_END_PART_START]"
+fi
+# 保留最后一个分区的情况下，最后分区的刷机包不计大小
+if [[ "$LAST_PART_NOT_FLASH" == "1" ]]; then
+    OTA_PACK_SIZE_KB=$(ls -l --block-size=K | grep -v "${OTA_NEW_LAST_PACK_NAME}." | awk -F' ' '{print $5}' | tr -d 'K' | sed '/^$/d' | paste -sd+ - | bc)
+fi
 OTA_NEED_SIZE_KB=$OTA_NEW_MAX_SIZE_KB
 echo "[INFO] update need size: $OTA_NEED_SIZE_KB KB"
 OTA_EMMC_SIZE_KB=$(echo "$(lsblk -b | grep '^mmcblk0' | head -n1 | awk -F' ' '{print $4}') / 1024" | bc)
@@ -167,8 +192,10 @@ if [ $OTA_EMMC_SIZE_KB -gt $OTA_EMMC_PART_SIZE ]; then
     panic "check update size error, all partitions less than 90% of the emmc space!!!"
 fi
 echo "[INFO] check update size check sucess"
+
 # 缩小最后一个分区，空出刷机包大小的空间
 echo "[INFO] resize last part to write update pack start"
+printenv >> "$LOGFILE"
 OTA_LAST_DEVICE=/dev/$(lsblk -o NAME /dev/mmcblk0 | tail -n1 | sed 's|└─||g')
 OTA_LAST_DEVICE_MOUNT_POINT=$(df | grep "${OTA_LAST_DEVICE}" | awk -F' ' '{print $6}')
 OTA_LAST_DEVICE_SIZE_KB=$(echo "$(lsblk -b ${OTA_LAST_DEVICE} | tail -n1 | awk -F' ' '{print $4}') / 1024" | bc)
@@ -210,6 +237,7 @@ echo "[INFO] resize last part to write update pack sucess"
 
 # 生成刷机文件emmc中存储位置表
 echo "[INFO] Generate Upgrade Package File Address Data Table start"
+printenv >> "$LOGFILE"
 OTA_EMMC_UPDATE_CMD_FILE=$(cat boot_emmc.cmd | grep -a ^load | grep boot_emmc | awk -F' ' '{print $NF}' | awk -F'/' '{print $NF}')
 OTA_FIP_UPDATE_CMD_FILE=$(cat boot.cmd | grep -a ^load | head -n1 | awk -F' ' '{print $NF}' | awk -F'/' '{print $NF}')
 OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a ^load | awk -F' ' '{print $NF}' | awk -F'/' '{print $NF}')
@@ -250,6 +278,13 @@ for emmc_boot_file in $(echo "${OTA_EMMC_UPDATE_CMD_FILE}"); do
     if [[ -z "$emmc_boot_file" ]]; then
         continue
     fi
+    # 在保留最后分区时需要跳过最后一个分区的记录
+    if [[ "$LAST_PART_NOT_FLASH" == "1" ]]; then
+        if [[ "$emmc_boot_file" == *"$OTA_NEW_LAST_PACK_NAME"* ]]; then
+            echo "[INFO] skip cmd file $emmc_boot_file because LAST_PART_NOT_FLASH mode"
+            continue
+        fi
+    fi
     for item in $(cat $emmc_boot_file | grep -aE "^load |^unzip |^mmc write"); do
         if [[ -z "$item" ]]; then
             continue
@@ -283,6 +318,7 @@ echo "[INFO] Generate Upgrade Package File Address Data Table sucess"
 
 # 生成刷机文件
 echo "[INFO] Generate Upgrade Script start"
+printenv >> "$LOGFILE"
 OTA_UPDATE_SCRIPT_FILE=$LOGFILE.update.cmd
 if [[ "${CPU_MODEL}" == "bm1684" ]]; then
 # v3.0.0 uboot
@@ -421,3 +457,5 @@ sync
 # reboot -f
 popd #sdcard
 echo "[INFO] Upgrade preparation is complete. Please restart the device to begin the upgrade."
+printenv >> "$LOGFILE"
+sync
