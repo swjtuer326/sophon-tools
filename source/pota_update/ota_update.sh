@@ -33,11 +33,16 @@ rm -rf /dev/shm/ota_error_flag
 
 function panic()
 {
-    printenv >> "$LOGFILE"
+    set >> "$LOGFILE"
     if [ $# -gt 0 ]; then
         echo "" >&1
         echo "[PANIC] $@" >&1
         echo "" >&1
+    fi
+    if [[ "$LAST_PART_NOT_FLASH" == "1" ]] || [[ "$LAST_PART_NOT_FLASH" == "LAST_PART_NOT_FLASH" ]]; then
+        if [ -f $WORK_DIR/sdcard/gpt.gz.bak ]; then
+            mv $WORK_DIR/sdcard/gpt.gz.bak $WORK_DIR/sdcard/gpt.gz
+        fi
     fi
     popd &>/dev/null
     touch /dev/shm/ota_error_flag
@@ -50,7 +55,7 @@ if [ ! "$(id -u)" -eq 0 ]; then
 fi
 
 # 检查的工具
-need_tools=("systemd" "systemd-run" "tee" "exec" "echo" "bc" "gdisk" "mkimage" "awk" "sed" "tr" "gzip")
+need_tools=("systemd" "systemd-run" "tee" "exec" "echo" "bc" "gdisk" "mkimage" "awk" "sed" "tr" "gzip" "dd" "sgdisk" "fdisk")
 for tool in "${need_tools[@]}"; do
     if ! command -v "$tool" > /dev/null 2>&1; then
         panic "$tool: cannot find"
@@ -137,24 +142,29 @@ echo "[INFO] md5 check sucess"
 
 # 确定刷机包大小和刷机后占空空间
 echo "[INFO] check update size check start"
-printenv >> "$LOGFILE"
+set >> "$LOGFILE"
 xmlfile=$(find . -type f -name "partition*xml")
 OTA_NEW_PACKAGE_GPT_PART_SIZE_KB=$(cat ${xmlfile} | grep "<physical_partition " | awk -F'"' '{print $2}')
 OTA_NEW_ALL_PART_SIZE_KB=$(cat ${xmlfile} | grep "<partition " | awk -F'"' '{print $4}' | paste -sd+ - | bc)
 OTA_NEW_LAST_PACK_NAME=$(cat ${xmlfile} | grep "<partition " | tail -n1 | awk -F'"' '{print $2}' | tr '[:upper:]' '[:lower:]')
+OTA_EMMC_SIZE_KB=$(echo "$(lsblk -b | grep '^mmcblk0' | head -n1 | awk -F' ' '{print $4}') / 1024" | bc)
+OTA_EMMC_SIZE_B=$(lsblk -b | grep '^mmcblk0' | head -n1 | awk -F' ' '{print $4}')
 OTA_GPT_TEMP_FILE="/dev/shm/ota_gpt"
 rm -f ${OTA_GPT_TEMP_FILE}
+rm -f ${OTA_GPT_TEMP_DISK_FILE}
 gzip -cd gpt.gz > ${OTA_GPT_TEMP_FILE}
-gdisk -l ${OTA_GPT_TEMP_FILE} 2>&1 >> "$LOGFILE"
+OTA_GPT_TEMP_DISK_FILE=${OTA_GPT_TEMP_FILE}.disk
+dd if=${OTA_GPT_TEMP_FILE} of=${OTA_GPT_TEMP_DISK_FILE} || panic "dd write ota info to file ${OTA_GPT_TEMP_DISK_FILE} error"
+dd if=/dev/null of=${OTA_GPT_TEMP_DISK_FILE} bs=1 count=1 seek=${OTA_EMMC_SIZE_B} || panic "dd sparse file ${OTA_GPT_TEMP_DISK_FILE} error"
+gdisk -l ${OTA_GPT_TEMP_DISK_FILE} 2>&1 >> "$LOGFILE"
 # 获取emmc扇区大小
-OTA_NEW_SECTOR_SIZE=$(gdisk -l ${OTA_GPT_TEMP_FILE} 2>&1 | grep "ector size" | awk -F' ' '{print $4}' | awk -F'/' '{print $1}')
+OTA_NEW_SECTOR_SIZE=$(gdisk -l ${OTA_GPT_TEMP_DISK_FILE} 2>&1 | grep "ector size" | awk -F' ' '{print $4}' | awk -F'/' '{print $1}')
 if [[ "$EMMC_SECTOR_B" != "$OTA_NEW_SECTOR_SIZE" ]]; then
     panic "get emmc sector size [$OTA_NEW_SECTOR_SIZE] not is default size [$EMMC_SECTOR_B], please check emmc and gdisk tool"
 fi
-OTA_NEW_GPT_END_SECTOR=$(gdisk -l ${OTA_GPT_TEMP_FILE} 2>&1 | tail -n1 | awk -F' ' '{print $3}')
-OTA_NEW_GPT_END_PART_START=$(gdisk -l ${OTA_GPT_TEMP_FILE} 2>&1 | tail -n1 | awk -F' ' '{print $2}')
+OTA_NEW_GPT_END_SECTOR=$(gdisk -l ${OTA_GPT_TEMP_DISK_FILE} 2>&1 | tail -n1 | awk -F' ' '{print $3}')
+OTA_NEW_GPT_END_PART_START=$(gdisk -l ${OTA_GPT_TEMP_DISK_FILE} 2>&1 | tail -n1 | awk -F' ' '{print $2}')
 OTA_NEW_GPT_END_SIZE_KB=$(echo "$OTA_NEW_SECTOR_SIZE * $OTA_NEW_GPT_END_SECTOR / 1024" | bc)
-rm -f ${OTA_GPT_TEMP_FILE}
 OTA_NEW_MAX_SIZE_KB=0
 if [ $OTA_NEW_MAX_SIZE_KB -lt $OTA_NEW_PACKAGE_GPT_PART_SIZE_KB ]; then
     OTA_NEW_MAX_SIZE_KB=$OTA_NEW_PACKAGE_GPT_PART_SIZE_KB
@@ -180,7 +190,6 @@ if [[ "$LAST_PART_NOT_FLASH" == "1" ]]; then
 fi
 OTA_NEED_SIZE_KB=$OTA_NEW_MAX_SIZE_KB
 echo "[INFO] update need size: $OTA_NEED_SIZE_KB KB"
-OTA_EMMC_SIZE_KB=$(echo "$(lsblk -b | grep '^mmcblk0' | head -n1 | awk -F' ' '{print $4}') / 1024" | bc)
 echo "[INFO] emmc size: $OTA_EMMC_SIZE_KB KB"
 if [ $OTA_EMMC_SIZE_KB -le $OTA_NEED_SIZE_KB ]; then
     panic "check update size error!!!"
@@ -195,7 +204,7 @@ echo "[INFO] check update size check sucess"
 
 # 缩小最后一个分区，空出刷机包大小的空间
 echo "[INFO] resize last part to write update pack start"
-printenv >> "$LOGFILE"
+set >> "$LOGFILE"
 OTA_LAST_DEVICE=/dev/$(lsblk -o NAME /dev/mmcblk0 | tail -n1 | sed 's|└─||g')
 OTA_LAST_DEVICE_MOUNT_POINT=$(df | grep "${OTA_LAST_DEVICE}" | awk -F' ' '{print $6}')
 OTA_LAST_DEVICE_SIZE_KB=$(echo "$(lsblk -b ${OTA_LAST_DEVICE} | tail -n1 | awk -F' ' '{print $4}') / 1024" | bc)
@@ -235,9 +244,23 @@ if [[ "$?" != "0" ]]; then
 fi
 echo "[INFO] resize last part to write update pack sucess"
 
+# 保留最后一个分区的情况下，拷贝当前emmc分区表最后一个分区的配置到新的分区表文件中
+if [[ "$LAST_PART_NOT_FLASH" == "1" ]]; then
+    echo "[INFO] LAST_PART_NOT_FLASH mode, need change gpt info"
+    sgdisk -e ${OTA_GPT_TEMP_DISK_FILE} || panic "sgdisk change file ${OTA_GPT_TEMP_DISK_FILE} error"
+    OTA_GPT_PART_NUM=$(fdisk -l ${OTA_GPT_TEMP_DISK_FILE} 2>&1 | grep "^${OTA_GPT_TEMP_DISK_FILE}" | wc -l)
+    OTA_OLD_GPT_END_PART_END=$(($OTA_OLD_GPT_END_PART_START + $OTA_LAST_DEVICE_NEW_SIZE_KB * 1024 / $EMMC_SECTOR_B))
+    echo -e "d\n${OTA_GPT_PART_NUM}\nn\n${OTA_GPT_PART_NUM}\n${OTA_OLD_GPT_END_PART_START}\n${OTA_OLD_GPT_END_PART_END}\n0700\nw\nY\n" | gdisk ${OTA_GPT_TEMP_DISK_FILE}
+    gdisk -l ${OTA_GPT_TEMP_DISK_FILE}
+    dd if=${OTA_GPT_TEMP_DISK_FILE} of=${OTA_GPT_TEMP_FILE} bs=1 count=17408 || panic "dd sparse file new info ${OTA_GPT_TEMP_DISK_FILE} to gpt file ${OTA_GPT_TEMP_FILE} error"
+    mv gpt.gz gpt.gz.bak
+    gzip -c ${OTA_GPT_TEMP_FILE} > gpt.gz || panic "gzip file ${OTA_GPT_TEMP_FILE} to gpt.gz error"
+    sync
+fi
+
 # 生成刷机文件emmc中存储位置表
 echo "[INFO] Generate Upgrade Package File Address Data Table start"
-printenv >> "$LOGFILE"
+set >> "$LOGFILE"
 OTA_EMMC_UPDATE_CMD_FILE=$(cat boot_emmc.cmd | grep -a ^load | grep boot_emmc | awk -F' ' '{print $NF}' | awk -F'/' '{print $NF}')
 OTA_FIP_UPDATE_CMD_FILE=$(cat boot.cmd | grep -a ^load | head -n1 | awk -F' ' '{print $NF}' | awk -F'/' '{print $NF}')
 OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a ^load | awk -F' ' '{print $NF}' | awk -F'/' '{print $NF}')
@@ -318,7 +341,7 @@ echo "[INFO] Generate Upgrade Package File Address Data Table sucess"
 
 # 生成刷机文件
 echo "[INFO] Generate Upgrade Script start"
-printenv >> "$LOGFILE"
+set >> "$LOGFILE"
 OTA_UPDATE_SCRIPT_FILE=$LOGFILE.update.cmd
 if [[ "${CPU_MODEL}" == "bm1684" ]]; then
 # v3.0.0 uboot
@@ -451,11 +474,16 @@ if [[ "$?" != "0" ]]; then
     panic "cp $OTA_UPDATE_SCRIPT_FILE.scr error!!!"
 fi
 echo "[INFO] Write update script to boot sucess"
-touch /dev/shm/ota_sucess_flag
+if [[ "$LAST_PART_NOT_FLASH" == "1" ]]; then
+    if [ -f gpt.gz.bak ]; then
+        mv gpt.gz.bak gpt.gz
+    fi
+fi
 echo "[INFO] wait sync ..."
 sync
 # reboot -f
 popd #sdcard
+set >> "$LOGFILE"
 echo "[INFO] Upgrade preparation is complete. Please restart the device to begin the upgrade."
-printenv >> "$LOGFILE"
+touch /dev/shm/ota_sucess_flag
 sync
