@@ -440,7 +440,7 @@ if [[ "${WORK_MODE}" == "SOC" ]]; then
     if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
         CPU_CLK=$(cat /sys/kernel/debug/clk/clk_div_a53_1/clk_rate | tr -d '\0')
         TPU_CLK=$(cat /sys/kernel/debug/clk/tpll_clock/clk_rate | tr -d '\0')
-        VPU_CLK=$(cat /sys/kernel/debug/clk/vpll_clock/clk_rate | tr -d '\0')
+        VPU_CLK=$(cat /sys/kernel/debug/clk/clk_gate_axi10/clk_rate | tr -d '\0')
     elif [[ "${CPU_MODEL}" == "bm1688" ]] || [[ "${CPU_MODEL}" == "cv186ah" ]]; then
         CPU_CLK=$(cat /sys/kernel/debug/clk/clk_a53pll/clk_rate | tr -d '\0')
         TPU_CLK=$(cat /sys/kernel/debug/clk/clk_tpll/clk_rate | tr -d '\0')
