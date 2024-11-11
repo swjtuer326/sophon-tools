@@ -1,4 +1,5 @@
 #!/bin/bash
+# 详细使用说明参考仓库：https://github.com/sophgo/sophon-tools/tree/main/source/pota_update
 
 # 配置区域
 EMMC_SECTOR_B=512
