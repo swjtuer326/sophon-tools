@@ -231,10 +231,10 @@ OTA_LAST_DEVICE_MOUNT_POINT=$(df | grep "${OTA_LAST_DEVICE}" | awk -F' ' '{print
 OTA_LAST_DEVICE_SIZE_KB=$(echo "$(lsblk -b ${OTA_LAST_DEVICE} | tail -n1 | awk -F' ' '{print $4}') \
 / 1024" | bc)
 OTA_PACK_NUM=$(ls -l ./ | wc -l)
-# 最后一个分区后预留20MB空间，并且每一个包开始都是一个扇区对齐
+# 最后一个分区后预留50MB空间，并且每一个包开始都是一个扇区对齐
 OTA_LAST_DEVICE_NEW_SIZE_KB=$(echo "$OTA_LAST_DEVICE_SIZE_KB - $OTA_PACK_SIZE_KB - ($OTA_PACK_NUM) \
-- (10 * 1024) - (20 * 1024)" | bc)
-OTA_PACK_WRITE_START_SECTOR=$(echo "($OTA_EMMC_SIZE_KB - $OTA_PACK_SIZE_KB - ($OTA_PACK_NUM) - (10 \
+- (10 * 1024) - (50 * 1024)" | bc)
+OTA_PACK_WRITE_START_SECTOR=$(echo "($OTA_EMMC_SIZE_KB - $OTA_PACK_SIZE_KB - ($OTA_PACK_NUM) - (20 \
 * 1024)) * (1024 / $EMMC_SECTOR_B)" | bc)
 echo "[INFO] last device $OTA_LAST_DEVICE need resize $OTA_LAST_DEVICE_SIZE_KB KB -> \
 $OTA_LAST_DEVICE_NEW_SIZE_KB KB"
@@ -328,11 +328,13 @@ unset OTA_EMMC_FLASH_SIZE
 unset OTA_EMMC_FLASH_UNZIP_SIZE
 unset OTA_EMMC_WRITE_OFFSET
 unset OTA_EMMC_WRITE_SIZE
+unset OTA_EMMC_MD5SUM
 declare -A OTA_EMMC_FLASH_OFFSET
 declare -A OTA_EMMC_FLASH_SIZE
 declare -A OTA_EMMC_FLASH_UNZIP_SIZE
 declare -A OTA_EMMC_WRITE_OFFSET
 declare -A OTA_EMMC_WRITE_SIZE
+declare -A OTA_EMMC_MD5SUM
 OTA_EMMC_FILES=()
 IFS=$'\n'
 for emmc_boot_file in $(echo "${OTA_EMMC_UPDATE_CMD_FILE}"); do
@@ -523,16 +525,42 @@ if [[ "$?" != "0" ]]; then
     panic "cp $OTA_UPDATE_SCRIPT_FILE.scr error!!!"
 fi
 echo "[INFO] Write update script to boot success"
+
+echo "[INFO] wait sync ..."
+sync
+
+echo "[INFO] chack pack md5sum on emmc start ..."
+OTA_FIP_MD5SUM_EMMC=$(dd if=/dev/mmcblk0 bs=${EMMC_SECTOR_B} \
+skip=$((${OTA_FIP_WRITE_OFFSET})) count=$((${OTA_FIP_WRITE_SIZE})) | \
+head -c $(stat -c %s $OTA_FIP_FILE) | md5sum)
+OTA_FIP_MD5SUM_FILE=$(dd if=${OTA_FIP_FILE} | md5sum)
+if [[ "$OTA_FIP_MD5SUM_EMMC" != "$OTA_FIP_MD5SUM_FILE" ]]; then
+    panic "check fip md5sum for emmc [$OTA_FIP_MD5SUM_EMMC] and file [$OTA_FIP_MD5SUM_FILE]"
+fi
+echo "[INFO] check fip md5sum: $OTA_FIP_MD5SUM_EMMC"
+for ((item = 0; item < ${#OTA_EMMC_FILES[@]}; item++)); do
+    filename=${OTA_EMMC_FILES[$item]}
+    OTA_EMMC_MD5SUM["$filename"]=$(dd if=/dev/mmcblk0 bs=$EMMC_SECTOR_B \
+skip=$((${OTA_EMMC_WRITE_OFFSET["$filename"]})) \
+count=$((${OTA_EMMC_WRITE_SIZE["$filename"]})) | head -c $(stat -c %s $filename) | md5sum)
+    OTA_EMMC_MD5SUM_FILE=$(dd if=${filename} | md5sum)
+    if [[ "${OTA_EMMC_MD5SUM["$filename"]}" != "$OTA_EMMC_MD5SUM_FILE" ]]; then
+        panic "check file $filename md5sum for emmc [${OTA_EMMC_MD5SUM["$filename"]}] \
+and file [$OTA_EMMC_MD5SUM_FILE]"
+    fi
+    echo "[INFO] check file $filename md5sum: ${OTA_EMMC_MD5SUM["$filename"]}"
+done
+echo "[INFO] chack pack md5sum on emmc success"
+
+# reboot -f
+popd #sdcard
+set >>"$LOGFILE"
 if [[ "$LAST_PART_NOT_FLASH" == "1" ]]; then
     if [ -f gpt.gz.bak ]; then
         mv gpt.gz.bak gpt.gz
     fi
 fi
-echo "[INFO] wait sync ..."
 sync
-# reboot -f
-popd #sdcard
-set >>"$LOGFILE"
 echo "[INFO] Upgrade preparation is complete. Please restart the device to begin the upgrade."
 touch /dev/shm/ota_success_flag
 sync
