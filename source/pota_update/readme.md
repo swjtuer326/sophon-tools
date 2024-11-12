@@ -55,18 +55,18 @@
     Unit sophon-ota-update.service could not be found.
     [INFO] ota server started, check status use: "systemctl status sophon-ota-update.service --no-page -l"
     [INFO] server log file: /dev/shm/ota_shell.sh.log
-    [INFO] if ota sucess, file /dev/shm/ota_sucess_flag will be created
+    [INFO] if ota success, file /dev/shm/ota_success_flag will be created
     [INFO] else if ota error, file /dev/shm/ota_error_flag will be created
-    [INFO] please wait file /dev/shm/ota_sucess_flag or /dev/shm/ota_error_flag
+    [INFO] please wait file /dev/shm/ota_success_flag or /dev/shm/ota_error_flag
     [WARRNING] ota server will resize last partition on emmc, if error, please check emmc partitions
     [WARRNING] ota server will stop docker server and all program on last partition
     ```
-6. 等待文件`/dev/shm/ota_sucess_flag`或`/dev/shm/ota_error_flag`的创建。
+6. 等待文件`/dev/shm/ota_success_flag`或`/dev/shm/ota_error_flag`的创建。
 
     1. OTA服务的日志会存放到`/dev/shm/ota_shell.sh.log`中，日志文件会有所有的log，可以用命令`sudo tail -f /dev/shm/ota_shell.sh.log`监控该文件的最新变更
     2. OTA服务会停止docker服务
     3. OTA服务会杀死所有依赖最后一个分区的进程，所以当前终端被杀死是有概率发生的
-7. 如果文件`/dev/shm/ota_sucess_flag`被创建，则重启设备即可开始刷机，刷机完成后设备会自动重启。
+7. 如果文件`/dev/shm/ota_success_flag`被创建，则重启设备即可开始刷机，刷机完成后设备会自动重启。
 8. 如果文件`/dev/shm/ota_error_flag`被创建，需要检查emmc上分区表和最后一个分区的数据是否完整。然后检查`/dev/shm/ota_shell.sh.log`文件中的报错信息。
 
 > 注：如果需要保留最后一个分区，操作如下：
