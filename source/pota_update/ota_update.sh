@@ -243,7 +243,7 @@ OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a ^load | awk -F' ' '{print 
 '{print $NF}')
 echo "[INFO] Check fip file and chip type start"
 if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-    if [[ "$(grep -ra ${CPU_MODEL}-pinctrl ${OTA_FIP_FILE} | wc -l)" == "0" ]]; then
+    if [[ "$(grep -ra ${CPU_MODEL}- ${OTA_FIP_FILE} | wc -l)" == "0" ]]; then
         panic "chip is ${CPU_MODEL}, but fip file not have info about it"
     fi
 elif [[ "${CPU_MODEL}" == "bm1688" ]] || [[ "${CPU_MODEL}" == "cv186ah" ]]; then
@@ -271,7 +271,6 @@ echo "[INFO] last device $OTA_LAST_DEVICE need resize $OTA_LAST_DEVICE_SIZE_KB K
 $OTA_LAST_DEVICE_NEW_SIZE_KB KB"
 cd /
 echo "[INFO] kill process of ${OTA_LAST_DEVICE_MOUNT_POINT} start"
-lsof | grep " ${OTA_LAST_DEVICE_MOUNT_POINT}" >>"$LOGFILE"
 systemctl stop docker
 echo "[INFO] fuser find need kill: "
 fuser -mk "${OTA_LAST_DEVICE_MOUNT_POINT}"
