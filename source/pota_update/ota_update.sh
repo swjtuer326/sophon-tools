@@ -6,7 +6,7 @@ EMMC_SECTOR_B=512
 original_ifs=$IFS
 # 刷机环境准备
 flash_pre_str='
-# Bitmain ota update U-Boot script
+# ota update U-Boot script
 # disable MCU watchdog
 i2c dev 1; i2c mw 0x69 1 0
 setenv update_all 1
@@ -15,7 +15,7 @@ led status off
 led error on
 '
 # 刷机完成后执行
-flash_post_str='# Bitmain ota update U-Boot script
+flash_post_str='# ota update U-Boot script
 echo all done
 
 led status on
