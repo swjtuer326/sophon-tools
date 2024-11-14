@@ -256,7 +256,6 @@ systemctl stop docker
 for item in $(lsof | grep "${OTA_LAST_DEVICE_MOUNT_POINT}" | awk -F' ' '{print $2}'); do
     echo "[INFO] need kill PID:$item"
     kill -15 $item &>/dev/null
-    kill -9 $item &>/dev/null
 done
 sleep 1
 for item in $(lsof | grep "${OTA_LAST_DEVICE_MOUNT_POINT}" | awk -F' ' '{print $2}'); do
