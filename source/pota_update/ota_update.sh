@@ -64,6 +64,20 @@ for tool in "${need_tools[@]}"; do
     fi
 done
 
+CPU_MODEL=$(awk -F': ' '/model name/{print $2; exit}' /proc/cpuinfo)
+! [[ "$CPU_MODEL" == "" ]] || panic "cannot get cpu model from /proc/cpuinfo"
+SOC_MODE_CPU_MODEL=("bm1684x" "bm1684" "bm1688" "cv186ah")
+WORK_MODE="ERROR"
+for element in "${SOC_MODE_CPU_MODEL[@]}"; do
+    if [ "$element" == "$CPU_MODEL" ]; then
+        WORK_MODE="SOC"
+        break
+    fi
+done
+if [[ "$WORK_MODE" == "ERROR" ]]; then
+    panic "chip type [$CPU_MODEL] not support"
+fi
+
 # 启动后台服务，依赖systemd
 DDR_SHELL_FILE="/dev/shm/ota_shell.sh"
 SHELL_FILE="$(readlink -f "${BASH_SOURCE[0]}")"
@@ -134,9 +148,6 @@ lspci >>"$LOGFILE"
 top -n1 >>"$LOGFILE"
 
 pushd sdcard
-
-CPU_MODEL=$(awk -F': ' '/model name/{print $2; exit}' /proc/cpuinfo)
-! [[ "$CPU_MODEL" == "" ]] || panic "cannot get cpu model from /proc/cpuinfo"
 
 # 使用MD5文件进行刷机包校验
 echo "[INFO] md5 check start"
@@ -301,6 +312,19 @@ OTA_FIP_UPDATE_CMD_FILE=$(cat boot.cmd | grep -a ^load | head -n1 | awk -F' ' '{
 -F'/' '{print $NF}')
 OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a ^load | awk -F' ' '{print $NF}' | awk -F'/' \
 '{print $NF}')
+# 判断fip是否和芯片相配合
+echo "[INFO] Check fip file and chip type start"
+if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
+    if [[ "$(grep -ra ${CPU_MODEL}-pinctrl ${OTA_FIP_FILE} | wc -l)" == "0" ]]; then
+        panic "chip is ${CPU_MODEL}, but fip file not have info about it"
+    fi
+elif [[ "${CPU_MODEL}" == "bm1688" ]] || [[ "${CPU_MODEL}" == "cv186ah" ]]; then
+    if [[ "$(grep -ra CVBL01 ${OTA_FIP_FILE} | wc -l)" == "0" ]] || \
+[[ "$(grep -ra CVLD02 ${OTA_FIP_FILE} | wc -l)" == "0" ]]; then
+        panic "chip is ${CPU_MODEL}, but fip file not have info about it"
+    fi
+fi
+echo "[INFO] Check fip file and chip type success"
 OTA_FIP_FLASH_OFFSET=()
 OTA_FIP_FLASH_SIZE=()
 IFS=$'\n'
@@ -409,7 +433,7 @@ led error off
 while true; do; echo "ERROR: SPI flash not exist"; sleep 0.5; done; fi;
 print chip_type
 " >>$OTA_UPDATE_SCRIPT_FILE
-    if [[ " ${OTA_EMMC_FILES[@]} " == *"system"* ]]; then
+    if [[ " ${OTA_EMMC_FILES[@]} " == *"system."* ]]; then
         flash_update_cmd="sf update \${ramdisk_addr_r} 0x0 0x120000"
     else
         flash_update_cmd="if test \"\$chip_type\" = "bm1684"; then sf update \${ramdisk_addr_b} 0x0 \
