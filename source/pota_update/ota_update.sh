@@ -57,7 +57,7 @@ fi
 
 # 检查的工具
 need_tools=("systemd" "systemd-run" "tee" "exec" "echo" "bc" "gdisk" "mkimage" "awk" "sed" "tr" \
-"gzip" "dd" "sgdisk" "fdisk")
+"gzip" "dd" "sgdisk" "fdisk" "fuser")
 for tool in "${need_tools[@]}"; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         panic "$tool: cannot find"
@@ -253,22 +253,12 @@ cd /
 echo "[INFO] kill process of ${OTA_LAST_DEVICE_MOUNT_POINT} start"
 lsof | grep " ${OTA_LAST_DEVICE_MOUNT_POINT}" >>"$LOGFILE"
 systemctl stop docker
-for item in $(lsof | grep "${OTA_LAST_DEVICE_MOUNT_POINT}" | awk -F' ' '{print $2}'); do
-    echo "[INFO] need kill PID:$item"
-    kill -15 $item &>/dev/null
-done
-sleep 1
-for item in $(lsof | grep "${OTA_LAST_DEVICE_MOUNT_POINT}" | awk -F' ' '{print $2}'); do
-    echo "[INFO] need kill PID:$item"
-    kill -15 $item &>/dev/null
-    kill -9 $item &>/dev/null
-done
-sleep 1
-for item in $(lsof | grep "${OTA_LAST_DEVICE_MOUNT_POINT}" | awk -F' ' '{print $2}'); do
-    echo "[INFO] need kill PID:$item"
-    kill -15 $item &>/dev/null
-    kill -9 $item &>/dev/null
-done
+echo "[INFO] fuser find need kill: "
+fuser -mk "${OTA_LAST_DEVICE_MOUNT_POINT}"
+fuser -mk "${OTA_LAST_DEVICE_MOUNT_POINT}"
+fuser -mk "${OTA_LAST_DEVICE_MOUNT_POINT}"
+fuser -mk "${OTA_LAST_DEVICE_MOUNT_POINT}"
+fuser -mk "${OTA_LAST_DEVICE_MOUNT_POINT}"
 echo "[INFO] kill process of ${OTA_LAST_DEVICE_MOUNT_POINT} success"
 umount -f ${OTA_LAST_DEVICE}
 if [[ "$(df | grep ${OTA_LAST_DEVICE} | wc -l)" != "0" ]]; then
