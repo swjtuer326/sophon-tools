@@ -234,6 +234,26 @@ if [ $OTA_EMMC_SIZE_KB -gt $OTA_EMMC_PART_SIZE ]; then
 fi
 echo "[INFO] check update size check success"
 
+# 判断fip是否和芯片相配合
+OTA_EMMC_UPDATE_CMD_FILE=$(cat boot_emmc.cmd | grep -a ^load | grep boot_emmc | awk -F' ' '{print \
+$NF}' | awk -F'/' '{print $NF}')
+OTA_FIP_UPDATE_CMD_FILE=$(cat boot.cmd | grep -a ^load | head -n1 | awk -F' ' '{print $NF}' | awk \
+-F'/' '{print $NF}')
+OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a ^load | awk -F' ' '{print $NF}' | awk -F'/' \
+'{print $NF}')
+echo "[INFO] Check fip file and chip type start"
+if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
+    if [[ "$(grep -ra ${CPU_MODEL}-pinctrl ${OTA_FIP_FILE} | wc -l)" == "0" ]]; then
+        panic "chip is ${CPU_MODEL}, but fip file not have info about it"
+    fi
+elif [[ "${CPU_MODEL}" == "bm1688" ]] || [[ "${CPU_MODEL}" == "cv186ah" ]]; then
+    if [[ "$(grep -ra CVBL01 ${OTA_FIP_FILE} | wc -l)" == "0" ]] || \
+[[ "$(grep -ra CVLD02 ${OTA_FIP_FILE} | wc -l)" == "0" ]]; then
+        panic "chip is ${CPU_MODEL}, but fip file not have info about it"
+    fi
+fi
+echo "[INFO] Check fip file and chip type success"
+
 # 缩小最后一个分区，空出刷机包大小的空间
 echo "[INFO] resize last part to write update pack start"
 set >>"$LOGFILE"
@@ -302,25 +322,6 @@ fi
 # 生成刷机文件emmc中存储位置表
 echo "[INFO] Generate Upgrade Package File Address Data Table start"
 set >>"$LOGFILE"
-OTA_EMMC_UPDATE_CMD_FILE=$(cat boot_emmc.cmd | grep -a ^load | grep boot_emmc | awk -F' ' '{print \
-$NF}' | awk -F'/' '{print $NF}')
-OTA_FIP_UPDATE_CMD_FILE=$(cat boot.cmd | grep -a ^load | head -n1 | awk -F' ' '{print $NF}' | awk \
--F'/' '{print $NF}')
-OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a ^load | awk -F' ' '{print $NF}' | awk -F'/' \
-'{print $NF}')
-# 判断fip是否和芯片相配合
-echo "[INFO] Check fip file and chip type start"
-if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-    if [[ "$(grep -ra ${CPU_MODEL}-pinctrl ${OTA_FIP_FILE} | wc -l)" == "0" ]]; then
-        panic "chip is ${CPU_MODEL}, but fip file not have info about it"
-    fi
-elif [[ "${CPU_MODEL}" == "bm1688" ]] || [[ "${CPU_MODEL}" == "cv186ah" ]]; then
-    if [[ "$(grep -ra CVBL01 ${OTA_FIP_FILE} | wc -l)" == "0" ]] || \
-[[ "$(grep -ra CVLD02 ${OTA_FIP_FILE} | wc -l)" == "0" ]]; then
-        panic "chip is ${CPU_MODEL}, but fip file not have info about it"
-    fi
-fi
-echo "[INFO] Check fip file and chip type success"
 OTA_FIP_FLASH_OFFSET=()
 OTA_FIP_FLASH_SIZE=()
 IFS=$'\n'
