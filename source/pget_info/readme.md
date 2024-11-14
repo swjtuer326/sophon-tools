@@ -45,6 +45,10 @@ sudo bash get_info.sh server <log file> <loop time> y
 
 https://github.com/user-attachments/assets/819bf5cd-c619-41b9-9e88-1c4dcba9c70a
 
+#### 特殊环境变量说明
+
+1. get_info默认不会使用pmbus工具记录PMIC相关信息，如果需要，请确保除了get_info之外没有其他任何程序在操作PMIC，然后配置环境变量`GET_INFO_PMBUS_ENABLE=1`后运行get_info即可
+
 ### get_info_log_to_png.py
 
 ``` bash

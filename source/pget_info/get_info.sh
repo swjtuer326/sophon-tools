@@ -235,7 +235,7 @@ if [[ "$1" == "server" ]] && [[ ! "$2" == "" ]] && [[ ! "$3" == "" ]]; then
         if [[ "$4" == "y" ]]; then
                 systemctl stop sophon-get-info-server.service
                 systemctl reset-failed sophon-get-info-server.service
-                systemd-run --unit=sophon-get-info-server /usr/bin/bash -c "source /etc/profile; ldconfig; while true; do sleep ${loop_wait_time}; bash ${get_info_pwd} 2>/dev/null 1>> ${log_file}; done;"
+                systemd-run --unit=sophon-get-info-server /usr/bin/bash -c "export GET_INFO_PMBUS_ENABLE=${GET_INFO_PMBUS_ENABLE}; source /etc/profile; ldconfig; while true; do sleep ${loop_wait_time}; bash ${get_info_pwd} 2>/dev/null 1>> ${log_file}; done;"
                 sleep 3
                 systemctl status sophon-get-info-server.service --no-page -l
                 exit 0
@@ -246,7 +246,7 @@ if [[ "$1" == "server" ]] && [[ ! "$2" == "" ]] && [[ ! "$3" == "" ]]; then
         then
                 systemctl stop sophon-get-info-server.service
                 systemctl reset-failed sophon-get-info-server.service
-                systemd-run --unit=sophon-get-info-server /usr/bin/bash -c "source /etc/profile; ldconfig; while true; do sleep ${loop_wait_time}; bash ${get_info_pwd} 2>/dev/null 1>> ${log_file}; done;"
+                systemd-run --unit=sophon-get-info-server /usr/bin/bash -c "export GET_INFO_PMBUS_ENABLE=${GET_INFO_PMBUS_ENABLE}; source /etc/profile; ldconfig; while true; do sleep ${loop_wait_time}; bash ${get_info_pwd} 2>/dev/null 1>> ${log_file}; done;"
                 sleep 3
                 systemctl status sophon-get-info-server.service --no-page -l
                 exit 0
@@ -524,19 +524,21 @@ VTPU_POWER=""
 VTPU_VOLTAGE=""
 VDDC_POWER=""
 VDDC_VOLTAGE=""
-if [[ "${WORK_MODE}" == "SOC" ]]; then
-        if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-        PMBUS_INFO=""
-        if [[ "$(get_i2c_dev_ok 0 50)" == "ok" ]]; then
-            PMBUS_INFO=$(pmbus -d 0 -s 0x50 -i 2>/dev/null)
-        elif [[ "$(get_i2c_dev_ok 0 55)" == "ok" ]]; then
-            PMBUS_INFO=$(pmbus -d 0 -s 0x55 -i 2>/dev/null)
-        fi
-        VTPU_POWER=$(echo "$PMBUS_INFO" | grep " output power:" | awk 'NR % 2 == 1' | awk '{print $4}' | tr -d 'W')
-        VTPU_VOLTAGE=$(echo "$PMBUS_INFO" | grep " output voltage:" | awk 'NR % 2 == 1' | awk '{print $4}' | tr -d 'm' | tr -d 'V')
-        VDDC_POWER=$(echo "$PMBUS_INFO" | grep " output power:" | awk 'NR % 2 == 0' | awk '{print $4}' | tr -d 'W')
-        VDDC_VOLTAGE=$(echo "$PMBUS_INFO" | grep " output voltage:" | awk 'NR % 2 == 0' | awk '{print $4}' | tr -d 'm' | tr -d 'V')
-        fi
+if [[ "$GET_INFO_PMBUS_ENABLE" == "1" ]]; then
+    if [[ "${WORK_MODE}" == "SOC" ]]; then
+            if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
+            PMBUS_INFO=""
+            if [[ "$(get_i2c_dev_ok 0 50)" == "ok" ]]; then
+                PMBUS_INFO=$(pmbus -d 0 -s 0x50 -i 2>/dev/null)
+            elif [[ "$(get_i2c_dev_ok 0 55)" == "ok" ]]; then
+                PMBUS_INFO=$(pmbus -d 0 -s 0x55 -i 2>/dev/null)
+            fi
+            VTPU_POWER=$(echo "$PMBUS_INFO" | grep " output power:" | awk 'NR % 2 == 1' | awk '{print $4}' | tr -d 'W')
+            VTPU_VOLTAGE=$(echo "$PMBUS_INFO" | grep " output voltage:" | awk 'NR % 2 == 1' | awk '{print $4}' | tr -d 'm' | tr -d 'V')
+            VDDC_POWER=$(echo "$PMBUS_INFO" | grep " output power:" | awk 'NR % 2 == 0' | awk '{print $4}' | tr -d 'W')
+            VDDC_VOLTAGE=$(echo "$PMBUS_INFO" | grep " output voltage:" | awk 'NR % 2 == 0' | awk '{print $4}' | tr -d 'm' | tr -d 'V')
+            fi
+    fi
 fi
 
 # V12_POWER
