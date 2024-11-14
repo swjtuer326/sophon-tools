@@ -251,13 +251,20 @@ echo "[INFO] last device $OTA_LAST_DEVICE need resize $OTA_LAST_DEVICE_SIZE_KB K
 $OTA_LAST_DEVICE_NEW_SIZE_KB KB"
 cd /
 echo "[INFO] kill process of ${OTA_LAST_DEVICE_MOUNT_POINT} start"
-lsof | grep "${OTA_LAST_DEVICE_MOUNT_POINT}" >>"$LOGFILE"
+lsof | grep " ${OTA_LAST_DEVICE_MOUNT_POINT}" >>"$LOGFILE"
 systemctl stop docker
 for item in $(lsof | grep "${OTA_LAST_DEVICE_MOUNT_POINT}" | awk -F' ' '{print $2}'); do
     echo "[INFO] need kill PID:$item"
     kill -15 $item &>/dev/null
     kill -9 $item &>/dev/null
 done
+sleep 1
+for item in $(lsof | grep "${OTA_LAST_DEVICE_MOUNT_POINT}" | awk -F' ' '{print $2}'); do
+    echo "[INFO] need kill PID:$item"
+    kill -15 $item &>/dev/null
+    kill -9 $item &>/dev/null
+done
+sleep 1
 for item in $(lsof | grep "${OTA_LAST_DEVICE_MOUNT_POINT}" | awk -F' ' '{print $2}'); do
     echo "[INFO] need kill PID:$item"
     kill -15 $item &>/dev/null
