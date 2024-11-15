@@ -238,19 +238,15 @@ echo "[INFO] check update size check success"
 # 判断fip是否和芯片相配合
 file_validate boot.cmd
 file_validate boot_emmc.cmd
-OTA_PACK_TYPE="error"
 OTA_PACK_READ_FILE_CMD="load"
-if [[ "$(cat boot.cmd | grep -a ^tftp | wc -l)" == "0" ]]; then
-    OTA_PACK_TYPE="sdcard"
-else
-    OTA_PACK_TYPE="tftp"
-fi
-if [[ "$OTA_PACK_TYPE" == "error" ]]; then
-    panic "cannot get update pack type"
-elif [[ "$OTA_PACK_TYPE" == "sdcard" ]]; then
-    OTA_PACK_READ_FILE_CMD="load"
-elif [[ "$OTA_PACK_TYPE" == "tftp" ]]; then
+if [[ "$(cat boot.cmd | grep -a ^tftp | wc -l)" != "0" ]]; then
     OTA_PACK_READ_FILE_CMD="tftp"
+elif [[ "$(cat boot.cmd | grep -a ^cvi_utask | wc -l)" != "0" ]]; then
+    OTA_PACK_READ_FILE_CMD="cvi_utask"
+elif [[ "$(cat boot.cmd | grep -a ^load | wc -l)" != "0" ]]; then
+    OTA_PACK_READ_FILE_CMD="load"
+else
+    panic "cannot get update pack type"
 fi
 OTA_EMMC_UPDATE_CMD_FILE=$(cat boot_emmc.cmd | grep -a "^${OTA_PACK_READ_FILE_CMD}" | grep boot_emmc | awk -F' ' '{print \
 $NF}' | awk -F'/' '{print $NF}')
