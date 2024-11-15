@@ -248,13 +248,13 @@ elif [[ "$(cat boot.cmd | grep -a ^load | wc -l)" != "0" ]]; then
 else
     panic "cannot get update pack type"
 fi
-OTA_EMMC_UPDATE_CMD_FILE=$(cat boot_emmc.cmd | grep -a "^${OTA_PACK_READ_FILE_CMD}" | grep boot_emmc | awk -F' ' '{print \
-$NF}' | awk -F'/' '{print $NF}')
-OTA_FIP_UPDATE_CMD_FILE=$(cat boot.cmd | grep -a "^${OTA_PACK_READ_FILE_CMD}" | head -n1 | awk -F' ' '{print $NF}' | awk \
--F'/' '{print $NF}')
+OTA_EMMC_UPDATE_CMD_FILE=$(cat boot_emmc.cmd | grep -a "^${OTA_PACK_READ_FILE_CMD}" | \
+grep boot_emmc | awk -F' ' '{print $NF}' | awk -F'/' '{print $NF}')
+OTA_FIP_UPDATE_CMD_FILE=$(cat boot.cmd | grep -a "^${OTA_PACK_READ_FILE_CMD}" | \
+head -n1 | awk -F' ' '{print $NF}' | awk -F'/' '{print $NF}')
 file_validate ${OTA_FIP_UPDATE_CMD_FILE}
-OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a "^${OTA_PACK_READ_FILE_CMD}" | awk -F' ' '{print $NF}' | awk -F'/' \
-'{print $NF}')
+OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a "^${OTA_PACK_READ_FILE_CMD}" | \
+awk -F' ' '{print $NF}' | awk -F'/' '{print $NF}')
 if [[ "$OTA_FIP_UPDATE_CMD_FILE" == "" ]]; then
     panic "cannot find fip update cmd file"
 fi
@@ -593,15 +593,15 @@ and file [$OTA_EMMC_MD5SUM_FILE]"
 done
 echo "[INFO] chack pack md5sum on emmc success"
 
-# reboot -f
-popd #sdcard
 set >>"$LOGFILE"
 if [[ "$LAST_PART_NOT_FLASH" == "1" ]]; then
     if [ -f gpt.gz.bak ]; then
         mv gpt.gz.bak gpt.gz
     fi
 fi
+popd #sdcard
 sync
 echo "[INFO] Upgrade preparation is complete. Please restart the device to begin the upgrade."
 touch /dev/shm/ota_success_flag
 sync
+# reboot -f
