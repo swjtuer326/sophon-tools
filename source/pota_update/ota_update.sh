@@ -114,7 +114,7 @@ LOGFILE="$(readlink -f "${BASH_SOURCE[0]}").log"
 rm -f $LOGFILE
 exec > >(tee -a "$LOGFILE") 2>&1
 
-echo "[INFO] ota update tool, version: v1.0.0"
+echo "[INFO] ota update tool, version: v1.1.0"
 
 WORK_DIR="$1"
 echo "[INFO] work dir: $WORK_DIR"
@@ -255,6 +255,12 @@ OTA_FIP_UPDATE_CMD_FILE=$(cat boot.cmd | grep -a "^${OTA_PACK_READ_FILE_CMD}" | 
 file_validate ${OTA_FIP_UPDATE_CMD_FILE}
 OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a "^${OTA_PACK_READ_FILE_CMD}" | awk -F' ' '{print $NF}' | awk -F'/' \
 '{print $NF}')
+if [[ "$OTA_FIP_UPDATE_CMD_FILE" == "" ]]; then
+    panic "cannot find fip update cmd file"
+fi
+if [[ "$OTA_FIP_FILE" == "" ]]; then
+    panic "cannot find fip file"
+fi
 echo "[INFO] Check fip file and chip type start"
 if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
     if [[ "$(grep -ra ${CPU_MODEL}- ${OTA_FIP_FILE} | wc -l)" == "0" ]]; then
