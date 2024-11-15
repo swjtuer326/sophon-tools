@@ -160,6 +160,7 @@ echo "[INFO] md5 check success"
 echo "[INFO] check update size check start"
 set >>"$LOGFILE"
 xmlfile=$(find . -type f -name "partition*xml")
+file_validate ${xmlfile}
 OTA_NEW_PACKAGE_GPT_PART_SIZE_KB=$(cat ${xmlfile} | grep "<physical_partition " | awk -F'"' '{print \
 $2}')
 OTA_NEW_ALL_PART_SIZE_KB=$(cat ${xmlfile} | grep "<partition " | awk -F'"' '{print $4}' | paste \
@@ -235,10 +236,13 @@ fi
 echo "[INFO] check update size check success"
 
 # 判断fip是否和芯片相配合
+file_validate boot_emmc.cmd
+file_validate boot.cmd
 OTA_EMMC_UPDATE_CMD_FILE=$(cat boot_emmc.cmd | grep -a ^load | grep boot_emmc | awk -F' ' '{print \
 $NF}' | awk -F'/' '{print $NF}')
 OTA_FIP_UPDATE_CMD_FILE=$(cat boot.cmd | grep -a ^load | head -n1 | awk -F' ' '{print $NF}' | awk \
 -F'/' '{print $NF}')
+file_validate ${OTA_FIP_UPDATE_CMD_FILE}
 OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a ^load | awk -F' ' '{print $NF}' | awk -F'/' \
 '{print $NF}')
 echo "[INFO] Check fip file and chip type start"
@@ -521,6 +525,7 @@ for ((item = 0; item < ${#OTA_EMMC_FILES[@]}; item++)); do
     echo -e "[INFO] write file $filename
     \t to emmc offset: ${OTA_EMMC_WRITE_OFFSET["$filename"]},
     \t size: ${OTA_EMMC_WRITE_SIZE["$filename"]}"
+    file_validate $filename
     dd if=$filename of=/dev/mmcblk0 bs=$EMMC_SECTOR_B \
 seek=$((${OTA_EMMC_WRITE_OFFSET["$filename"]})) count=$((${OTA_EMMC_WRITE_SIZE["$filename"]})) \
 status=progress
