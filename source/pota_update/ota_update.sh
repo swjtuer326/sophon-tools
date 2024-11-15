@@ -236,14 +236,28 @@ fi
 echo "[INFO] check update size check success"
 
 # 判断fip是否和芯片相配合
-file_validate boot_emmc.cmd
 file_validate boot.cmd
-OTA_EMMC_UPDATE_CMD_FILE=$(cat boot_emmc.cmd | grep -a ^load | grep boot_emmc | awk -F' ' '{print \
+file_validate boot_emmc.cmd
+OTA_PACK_TYPE="error"
+OTA_PACK_READ_FILE_CMD="load"
+if [[ "$(cat boot.cmd | grep -a ^tftp | wc -l)" == "0" ]]; then
+    OTA_PACK_TYPE="sdcard"
+else
+    OTA_PACK_TYPE="tftp"
+fi
+if [[ "$OTA_PACK_TYPE" == "error" ]]; then
+    panic "cannot get update pack type"
+elif [[ "$OTA_PACK_TYPE" == "sdcard" ]]; then
+    OTA_PACK_READ_FILE_CMD="load"
+elif [[ "$OTA_PACK_TYPE" == "tftp" ]]; then
+    OTA_PACK_READ_FILE_CMD="tftp"
+fi
+OTA_EMMC_UPDATE_CMD_FILE=$(cat boot_emmc.cmd | grep -a "^${OTA_PACK_READ_FILE_CMD}" | grep boot_emmc | awk -F' ' '{print \
 $NF}' | awk -F'/' '{print $NF}')
-OTA_FIP_UPDATE_CMD_FILE=$(cat boot.cmd | grep -a ^load | head -n1 | awk -F' ' '{print $NF}' | awk \
+OTA_FIP_UPDATE_CMD_FILE=$(cat boot.cmd | grep -a "^${OTA_PACK_READ_FILE_CMD}" | head -n1 | awk -F' ' '{print $NF}' | awk \
 -F'/' '{print $NF}')
 file_validate ${OTA_FIP_UPDATE_CMD_FILE}
-OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a ^load | awk -F' ' '{print $NF}' | awk -F'/' \
+OTA_FIP_FILE=$(cat $OTA_FIP_UPDATE_CMD_FILE | grep -a "^${OTA_PACK_READ_FILE_CMD}" | awk -F' ' '{print $NF}' | awk -F'/' \
 '{print $NF}')
 echo "[INFO] Check fip file and chip type start"
 if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
@@ -372,11 +386,11 @@ for emmc_boot_file in $(echo "${OTA_EMMC_UPDATE_CMD_FILE}"); do
             continue
         fi
     fi
-    for item in $(cat $emmc_boot_file | grep -aE "^load |^unzip |^mmc write"); do
+    for item in $(cat $emmc_boot_file | grep -aE "^${OTA_PACK_READ_FILE_CMD} |^unzip |^mmc write"); do
         if [[ -z "$item" ]]; then
             continue
         fi
-        if [[ "$item" == "load "* ]]; then
+        if [[ "$item" == "${OTA_PACK_READ_FILE_CMD} "* ]]; then
             filename="$(echo "$item" | awk -F' ' '{print $NF}' | awk -F'/' '{print $NF}')"
             size=$(echo "scale=0; $(stat -c %s $filename) / $EMMC_SECTOR_B + 1" | bc)
             OTA_EMMC_FILES+=($filename)
