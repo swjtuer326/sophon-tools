@@ -64,8 +64,6 @@ with open(log_name,'r') as file:
                     data = min(data , item["max"])
                 if item.get("min") is not None:
                     data = max(data , item["min"])
-                if item["name"] == "V12_POWER":
-                    data = data * 18 / 33
                 infos_data[item["name"]].append(data)
 
 def plan_square_frame(num_squares):
