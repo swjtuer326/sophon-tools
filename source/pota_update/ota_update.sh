@@ -293,11 +293,13 @@ cd /
 echo "[INFO] kill process of ${OTA_LAST_DEVICE_MOUNT_POINT} start"
 systemctl stop docker
 echo "[INFO] fuser find need kill: "
-fuser -mk "${OTA_LAST_DEVICE_MOUNT_POINT}"
-fuser -mk "${OTA_LAST_DEVICE_MOUNT_POINT}"
-fuser -mk "${OTA_LAST_DEVICE_MOUNT_POINT}"
-fuser -mk "${OTA_LAST_DEVICE_MOUNT_POINT}"
-fuser -mk "${OTA_LAST_DEVICE_MOUNT_POINT}"
+fuser -mk "${OTA_LAST_DEVICE}"
+fuser -mk "${OTA_LAST_DEVICE}"
+fuser -mk "${OTA_LAST_DEVICE}"
+fuser -mk "${OTA_LAST_DEVICE}"
+fuser -mk "${OTA_LAST_DEVICE}"
+sleep 5
+fuser -mk "${OTA_LAST_DEVICE}"
 echo "[INFO] kill process of ${OTA_LAST_DEVICE_MOUNT_POINT} success"
 umount -f ${OTA_LAST_DEVICE}
 if [[ "$(df | grep ${OTA_LAST_DEVICE} | wc -l)" != "0" ]]; then
