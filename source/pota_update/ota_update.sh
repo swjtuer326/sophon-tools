@@ -359,7 +359,7 @@ for ((item = 0; item < ${#OTA_FIP_FLASH_OFFSET[@]}; item++)); do
     echo "[INFO] fip file flash to emmcboot1 ${OTA_FIP_FLASH_OFFSET[$item]}, size: \
 ${OTA_FIP_FLASH_SIZE[$item]}"
 done
-offset=$(echo "$OTA_PACK_WRITE_START_SECTOR + (10 * 1024) * (1024 / $EMMC_SECTOR_B)" | bc)
+offset=$(echo "$OTA_PACK_WRITE_START_SECTOR + 0" | bc)
 size=$(echo "scale=0; $(stat -c %s $OTA_FIP_FILE) / $EMMC_SECTOR_B + 1" | bc)
 OTA_FIP_WRITE_OFFSET=$(printf '0x%X' $offset)
 OTA_FIP_WRITE_SIZE=$(printf '0x%X' $size)
