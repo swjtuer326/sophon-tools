@@ -57,7 +57,7 @@ fi
 
 # 检查的工具
 need_tools=("systemd" "systemd-run" "tee" "exec" "echo" "bc" "gdisk" "mkimage" "awk" "sed" "tr" \
-"gzip" "dd" "sgdisk" "fdisk" "fuser")
+"gzip" "dd" "sgdisk" "fdisk" "fuser" "wall")
 for tool in "${need_tools[@]}"; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         panic "$tool: cannot find"
@@ -606,4 +606,9 @@ sync
 echo "[INFO] Upgrade preparation is complete. Please restart the device to begin the upgrade."
 touch /dev/shm/ota_success_flag
 sync
+# You can uncomment the line below to automatically reboot after the OTA preparation is complete.
 # reboot -f
+while true; do
+    wall "[OTA] Upgrade preparation is complete. Please restart the device to begin the upgrade."
+    sleep 5
+done
