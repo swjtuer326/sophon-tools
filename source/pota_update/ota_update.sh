@@ -47,6 +47,7 @@ function panic() {
     fi
     popd &>/dev/null
     touch /dev/shm/ota_error_flag
+    wall "[OTA PANIC] $@"
     exit 1
 }
 
