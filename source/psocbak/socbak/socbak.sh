@@ -163,8 +163,7 @@ if [[ "$SOC_NAME" == "bm1684x" ]] || [[ "$SOC_NAME" == "bm1684" ]]; then
 elif [[ "$SOC_NAME" == "bm1688" ]]; then
 	NEED_BAK_FLASH=1
 	ROOTFS_RW_SIZE=$((9291456 + 0))
-	#TGZ_FILES_SIZE["recovery"]=110592
-	TGZ_FILES_SIZE["recovery"]=1024
+	TGZ_FILES_SIZE["recovery"]=131072
 	ALL_IN_ONE_SCRIPT="${TGZ_FILES_PATH}/script/bm1688/"
 fi
 
@@ -243,9 +242,13 @@ function resize_min_size()
 		if [[ "$(echo $run_log | grep "No space left on device" | wc -l)" == "0" ]]; then
 			break
 		fi
+		if [[ "$(echo $run_log | grep "Not enough space to build proposed filesystem" | wc -l)" == "0" ]]; then
+			break
+		fi
 		count=$(($count + 1))
 		if [ $count -gt $4 ]; then
-			echo "ERROR: cannot find min size, count($count)." | tee -a $SOCBAK_LOG_PATH
+			echo "ERROR: cannot find min size, count($count). resize2fs ret: " | tee -a $SOCBAK_LOG_PATH
+			echo "$run_log" | tee -a $SOCBAK_LOG_PATH
 			socbak_cleanup
 		fi
 	done
