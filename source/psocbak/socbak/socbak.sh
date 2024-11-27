@@ -449,7 +449,7 @@ if [ $TGZ_ALL_SIZE -gt $EMMC_ALL_SIZE ]; then
 fi
 
 SOCBAK_EMMC_SIZE_ALL=$(lsblk -b | grep '^mmcblk0 ' | awk '{print $4}')
-SOCBAK_EMMC_SIZE_ALL=$(( $SOCBAK_EMMC_SIZE_ALL / 1024 - 104857600))
+SOCBAK_EMMC_SIZE_ALL=$(( $SOCBAK_EMMC_SIZE_ALL / 1024 - 102400))
 if [ $EMMC_ALL_SIZE -gt $SOCBAK_EMMC_SIZE_ALL ]; then
 	echo "ERROR: bakpack size($EMMC_ALL_SIZE) > emmc size($SOCBAK_EMMC_SIZE_ALL), please del some file and rework."
 	socbak_cleanup
