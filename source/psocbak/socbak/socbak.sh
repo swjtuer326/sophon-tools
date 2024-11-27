@@ -239,10 +239,7 @@ function resize_min_size()
 		echo "INFO: attempt partition($1) size ${part_size_M}M ..." | tee -a $SOCBAK_LOG_PATH
 		run_log=$(resize2fs $1 "${part_size_M}M" -f &>/dev/stdout)
 		e2fsck -fy $1 1>/dev/null
-		if [[ "$(echo $run_log | grep "No space left on device" | wc -l)" == "0" ]]; then
-			break
-		fi
-		if [[ "$(echo $run_log | grep "Not enough space to build proposed filesystem" | wc -l)" == "0" ]]; then
+		if [[ "$(echo $run_log | grep -E "No space left on device|Not enough space to build proposed filesystem" | wc -l)" == "0" ]]; then
 			break
 		fi
 		count=$(($count + 1))
