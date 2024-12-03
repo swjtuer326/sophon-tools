@@ -3,6 +3,7 @@
 # 当前所有子设备数量,用于校验该文件是否配置正确
 seNCtrl_ALL_SUB_NUM=12
 seNCtrl_CONFIG_FLAG="OK"
+Bridge_CONFIG_FLAG=0
 
 unset seNCtrl_ALL_SUB_IP_ID
 declare -A seNCtrl_ALL_SUB_IP_ID

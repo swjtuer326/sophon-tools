@@ -12,15 +12,57 @@ seNCtrl_HOST_SUB_ETHS=()
 if [ "$product" = "SE6-CTRL" ] || [ "$product" = "SE6 CTRL" ] || [ "$product" = "SM7 CTRL" ] || [ "$product" = "SE8 CTRL" ]; then
     seNCtrl_HOST_SUB_ETHS+=('eth0' 'eth1')
     seNCtrl_DEBUG_UART=/dev/ttyS2
-    
+    YAML_FILE="/etc/netplan/01-netcfg.yaml"
+    INTERFACE_0="eth0"
+    INTERFACE_1="eth1"
+    WAN="enp4s0"
 else #se8 x86
     seNCtrl_HOST_SUB_ETHS+=('eno1' 'enp2s0f0' 'bond0')
     seNCtrl_DEBUG_UART=/dev/ttyS1
+    YAML_FILE="/etc/netplan/01-network-manager-all.yaml"
+    INTERFACE_0="eno1"
+    INTERFACE_1="eno3"
+    WAN="eno5"
 fi
-for eth in "${seNCtrl_HOST_SUB_ETHS[@]}"; do
-    seNCtrl_SUB_IP_HALF=$(ifconfig "$eth" 2> /dev/null | grep "inet "|awk '{print $2}'|awk -F . '{printf("%d.%d\n", $1,$2)}')
-    if [ -n "$seNCtrl_SUB_IP_HALF" ]; then break; fi
-done
+
+source ${seNCtrl_PWD}/configs/sub/subInfo.12
+if ifconfig | grep "^br" > /dev/null 2>&1 && [ "$Bridge_CONFIG_FLAG" == "1" ]; then
+    seNCtrl_SUB_IP_HALF=$Bridge_IP_HALF 
+    # echo $seNCtrl_SUB_IP_HALF
+    
+    #check if netplan yaml of eth0/1 is null
+    ETH0_ADDRESSES=$(sudo grep -A 2 "$INTERFACE_0:" "$YAML_FILE" | grep "addresses:" | awk '{print $2}' | tr -d '[]')
+    ETH1_ADDRESSES=$(sudo grep -A 2 "$INTERFACE_1:" "$YAML_FILE" | grep "addresses:" | awk '{print $2}' | tr -d '[]')
+    # check eth0 addresses
+    if [ -n "$ETH0_ADDRESSES" ]; then
+        sudo sed -i "/$INTERFACE_0:/,/optional: yes/ {
+            s/addresses: \[[^]]*\]/addresses: []/
+        }" $YAML_FILE
+    fi
+
+    # check eth1 addresses
+    if [ -n "$ETH1_ADDRESSES" ]; then
+        sudo sed -i "/$INTERFACE_1:/,/optional: yes/ {
+            s/addresses: \[[^]]*\]/addresses: []/
+        }" $YAML_FILE
+    fi
+
+    if [ -n "$ETH0_ADDRESSES" ] || [ -n "$ETH1_ADDRESSES" ]; then
+        echo "net config..."
+        sudo netplan apply
+        sleep 5
+    fi
+
+else
+    #seNCtrl_SUB_IP_0 and seNCtrl_SUB_IP_1 are for bridges config
+    seNCtrl_SUB_IP_0=$(ip addr show "$INTERFACE_0" | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)
+    seNCtrl_SUB_IP_1=$(ip addr show "$INTERFACE_1" | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)
+    for eth in "${seNCtrl_HOST_SUB_ETHS[@]}"; do
+        seNCtrl_SUB_IP_HALF=$(ifconfig "$eth" 2> /dev/null | grep "inet "|awk '{print $2}'|awk -F . '{printf("%d.%d\n", $1,$2)}')
+        if [ -n "$seNCtrl_SUB_IP_HALF" ]; then break; fi
+    done
+fi
+
 if [ "$seNCtrl_SUB_IP_HALF" = "" ]; then echo "cannot get ip to core, exit"; ifconfig; exit -1; fi
 source <(sed 's/172\.16/${seNCtrl_SUB_IP_HALF}/g' ${seNCtrl_PWD}/configs/sub/subInfo.12)
 sudo chmod 777 ${seNCtrl_DEBUG_UART}

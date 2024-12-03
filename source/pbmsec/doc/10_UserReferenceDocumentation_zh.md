@@ -1155,3 +1155,38 @@ config info:
         udp  172.26.166.158   8554:8555    (172.16.140.11 1)  8554-8555    
         tcp  172.26.166.158   8022         (172.16.150.12 8)  22          
         ```
+18. **设置网桥模式 [netconf \<opt>]**
+    - 注：该功能可以在控制板netplan增加网桥配置，同时设置算力节点为DHCP4模式；如果从网桥模式切换至其他模式，除了执行`bmsec netconf <opt>`外，您还需重启整个设备。当设备处于网桥模式时，如果重启了设备，您需执行`bmsec netconf 1`，以保证网桥模式可用。
+    - 参数：
+        - `<opt>`：选项
+            - 0 :DHCP4端口转发模式
+            - 1 :网桥模式
+
+    - 说明：通过此功能，用户可以配置网络模式。
+    - 命令行模式示例：
+        - `bmsec netconf 0`   DHCP4端口转发模式
+        - `bmsec netconf 1`   网桥模式
+    - 输出示例:
+
+        网桥模式
+
+            ```bash
+            se6@se6-desktop:~$ bmsec netconf 1
+            config bridges...
+            Mode is set to 1
+            set all cores as DHCP MODE!
+            setting bridges in netplan yaml file...
+            backup /etc/netplan/01-network-manager-all.yaml
+            config netplan...
+            Update completed: 'wanname=br0' added.
+            ```
+        DHCP4端口转发模式
+
+            ```bash
+            se6@se6-desktop:~$ bmsec netconf 0
+            delete bridges config...
+            Mode is set to 0
+            reset network config of all cores
+            reset host netplan config...
+            please reboot!
+            ```

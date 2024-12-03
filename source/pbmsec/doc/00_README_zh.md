@@ -47,7 +47,6 @@
 15. 重新生成算力核心配置信息 [rconf]
 16. 将指定算力核心的环境进行打包，可选生成tftp刷机包和仅打半成品包 [sysbak \<id> \<localPath>]
 17. 通过此功能，用户可以编辑端口映射 [pt \<opt> [\<hostIp> \<id> \<host-port> \<core-port> \<protocol>]]
-
 [onlyBak]]
 
 ## 注意事项
