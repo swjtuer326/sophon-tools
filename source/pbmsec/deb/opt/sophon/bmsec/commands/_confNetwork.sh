@@ -137,7 +137,7 @@ function conf_bridge()
                 br0:
                         interfaces: [$WAN, $INTERFACE_0, $INTERFACE_1]
                         dhcp4: yes
-                        addresses: [172.26.166.141/24, $seNCtrl_SUB_IP_0/24, $seNCtrl_SUB_IP_1/24]
+                        addresses: [192.168.150.3/24, $seNCtrl_SUB_IP_0/24, $seNCtrl_SUB_IP_1/24]
                         nameservers:
                                 addresses: [8.8.8.8]
 EOF
@@ -148,7 +148,7 @@ EOF
                 br0:
                         interfaces: [$WAN, $INTERFACE_0, $INTERFACE_1]
                         dhcp4: yes
-                        addresses: [172.26.166.141/24, $seNCtrl_SUB_IP_0/24, $seNCtrl_SUB_IP_1/24]
+                        addresses: [192.168.150.3/24, $seNCtrl_SUB_IP_0/24, $seNCtrl_SUB_IP_1/24]
                         nameservers:
                                 addresses: [8.8.8.8]
 EOF
