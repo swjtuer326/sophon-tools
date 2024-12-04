@@ -101,3 +101,5 @@ sudo chmod +x ${seNCtrl_PWD}/commands/*
 seNCtrl_OPTIONS_BY_NAME["_reset_all"]="_reset_all.sh"
 #对只能进入uboot状态的算力节点进行强制刷机（需要确保/recovery/tftp下刷机包的正确性）
 seNCtrl_OPTIONS_BY_NAME["_update_sub"]="_update_sub.sh"
+#配置网络模式
+seNCtrl_OPTIONS_BY_NAME["netconf"]="_confNetwork.sh"
