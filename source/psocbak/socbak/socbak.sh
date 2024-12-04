@@ -108,6 +108,11 @@ if [[ "${FILESYSTEM}" != "ext4" ]]; then
 	echo "You can format the external storage to ext4 format according to the content at https://developer.sophgo.com/thread/758.html."
 fi
 
+if [[ "${FILESYSTEM}" == "vfat" ]] || [[ "${FILESYSTEM}" == "fat" ]]; then
+    echo "ERROR: filesystem ${FILESYSTEM} is not supported to use socbak, please look at infomation above!" | tee -a $SOCBAK_LOG_PATH
+    exit -1
+fi
+
 echo "INFO: get chip id ..." | tee -a $SOCBAK_LOG_PATH
 if [[ "$(busybox devmem 0x50010000 2>/dev/null)" == "0x16860000" ]]; then
 	SOC_NAME="bm1684x"
