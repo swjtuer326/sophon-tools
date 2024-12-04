@@ -38,7 +38,7 @@ def get_architecture():
     return 'unknown'
 
 def main():
-    print("dfss python tool, version: v1.7.11")
+    print("dfss python tool, version: v1.7.12")
     binary_arch = get_architecture()
     
     if binary_arch == 'unknown':
