@@ -43,7 +43,7 @@
     [MEMTEST INFO] you can use 'systemctl stop memtest_s.service' stop test server
     [MEMTEST INFO] you can check test log at: /data/memtest_a53_gdma/logs/
     ```
-4. 脚本启动后压测业务会在后台运行，可以通过bm-smi观测到gdma的运行情况，也可以通过路径/data/memtest_a53_gdma/logs/下的log文件了解详细的测试情况
+4. 脚本启动后压测业务会在后台运行，可以通过bm-smi观测到gdma的运行情况，也可以通过路径 `/xxx/memtest_a53_gdma/logs/` 下的log文件了解详细的测试情况
 5. 等到服务发布广播（所有登录的终端都可以收到该广播）则压测完毕，可以通过 `logs_check.sh` 脚本检查日志文件是否有错误
     1. 压测完成并没有错误的广播如下:
         ``` bash
