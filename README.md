@@ -23,6 +23,7 @@
 | spacc_efuse_demo | source/pspacc_efuse_demo | 否 | efuse+spacc加解密Demo |
 | SophUI | source/pSophUI | 否 | HDMI配网页面工程 |
 | ota_update | source/pota_update | 是 | OTA远程刷机工具 |
+| memtest_a53_gdma | source/pmemtest | 是 | SoC模式DDR压测工具 |
 
 ## 编译方式
 
