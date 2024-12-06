@@ -64,8 +64,9 @@
         [INFO] memtest logs check success, no error!!!
         ```
 
-> 1. 日志文件会有2-3个，如下：
+> 日志文件会有2-3个，如下：
 >   1. gdma.log - GDMA压测程序的日志
 >   2. memtester.log - memtester压测程序的日志
 >   3. error.log - 如果压测失败，则会生成该日志，里面有部分错误信息
-> 2. 如果压测有报错，同样会进行广播，广播会以 `[MEMTEST ERROR]` 开头
+
+> 如果压测有报错，同样会进行广播，广播会以 `[MEMTEST ERROR]` 开头
