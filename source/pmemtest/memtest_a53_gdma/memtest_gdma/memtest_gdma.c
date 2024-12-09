@@ -43,7 +43,9 @@ struct rand_pid_args {
   pthread_rwlock_t* rwlock;
   atomic_int* atomic_run_test_num;
 };
+#if USE_GDMA_WITH_CORE
 static unsigned int core_num = 1;
+#endif
 
 static size_t cmp_find_error_addr(unsigned char* a, unsigned char* b,
                                   size_t size) {
@@ -492,11 +494,13 @@ int main(int argc, char* argv[]) {
   }
   printf("[INFO] dev mem total: %d MiB, heap num: %d\r\n", dev_stat.mem_total,
          dev_stat.heap_num);
+#if USE_GDMA_WITH_CORE
   if (bm_get_tpu_scalar_num(bm_handle_all, &core_num) != BM_SUCCESS) {
     printf("[ERROR] get core num dev %d failed\n", dev_id);
     exit(EXIT_FAILURE);
   }
   printf("[INFO] core num: %d\r\n", core_num);
+#endif
   for (int i = 0; i < dev_stat.heap_num; i++) {
     bm_heap_stat_byte_t bm_mem_stat;
     if (bm_get_gmem_heap_stat_byte_by_id(bm_handle_all, &bm_mem_stat, i) !=
