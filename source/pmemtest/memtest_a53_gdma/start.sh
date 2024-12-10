@@ -103,20 +103,20 @@ function memtest_s() {
 		popd
 	}
 
-	export work_dir="$1"
-	export loop="$2"
+	work_dir="$1"
+	loop="$2"
 	rm -rf "$work_dir/logs"
 	mkdir -p "$work_dir/logs"
-	export MEMTEST_GDMA_LOG="$work_dir/logs/gdma.log"
-	export MEMTEST_A53_LOG="$work_dir/logs/memtester.log"
-	export MEMTEST_ERROR_LOG="$work_dir/logs/error.log"
+	MEMTEST_GDMA_LOG="$work_dir/logs/gdma.log"
+	MEMTEST_A53_LOG="$work_dir/logs/memtester.log"
+	MEMTEST_ERROR_LOG="$work_dir/logs/error.log"
 
 	file_validate /proc/cpuinfo
 	# CPU NAME
-	export CPU_MODEL=$(awk -F': ' '/model name/{print $2; exit}' /proc/cpuinfo)
+	CPU_MODEL=$(awk -F': ' '/model name/{print $2; exit}' /proc/cpuinfo)
 	# WORK MODE
-	export SOC_MODE_CPU_MODEL=("bm1684x" "bm1684" "bm1688" "cv186ah")
-	export WORK_MODE="PCIE"
+	SOC_MODE_CPU_MODEL=("bm1684x" "bm1684" "bm1688" "cv186ah")
+	WORK_MODE="PCIE"
 	for element in "${SOC_MODE_CPU_MODEL[@]}"; do
 		if [ "$element" == "$CPU_MODEL" ]; then
 			WORK_MODE="SOC"
@@ -142,16 +142,16 @@ pushd $dir_path/memtest_gdma
 sudo bash build.sh || echo "[MEMTEST ERROR] build memtest gdma error"
 popd
 
-export loop=$1
+loop=$1
 if [[ "$loop" == "" ]]; then
 	loop=1
 fi
 
 fun_str=$(declare -f memtest_s | gzip -c - | base64)
 
-sudo systemctl stop memtest_s.service
-sudo systemctl reset-failed memtest_s.service
-sudo rm -f /run/systemd/transient/memtest_s.service
+sudo systemctl stop memtest_s.service 2>/dev/null
+sudo systemctl reset-failed memtest_s.service 2>/dev/null
+sudo rm -f /run/systemd/transient/memtest_s.service 2>/dev/null
 sudo systemctl daemon-reload
 
 sudo systemd-run --unit=memtest_s /usr/bin/bash -c \
