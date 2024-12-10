@@ -51,7 +51,7 @@ function memtest_s() {
 		echo "[MEMTEST INFO] memtester a53 test loop: $loop"
 		chmod +x memtester
 		while true; do
-			freeMemMB=$(free -m | grep ^Mem | awk '{print $NF - 260}')
+			freeMemMB=$(free -m | grep ^Mem | awk '{print $NF - 100}')
 			./memtester ${freeMemMB}M 1
 			if [[ "$?" != "0" ]]; then
 				panic "memtester error"
@@ -81,7 +81,7 @@ function memtest_s() {
 			TPU_MEM_USAGE=$(get_ion_usage "/sys/kernel/debug/ion/cvi_npu_heap_dump")
 			VPP_MEM_USAGE=$(get_ion_usage "/sys/kernel/debug/ion/cvi_vpp_heap_dump")
 			VPU_MEM_USAGE="0"
-            t_num=8
+            t_num=4
 		fi
 		if [[ "$TPU_MEM_USAGE" != "0" ]] ||
 			[[ "$VPU_MEM_USAGE" != "0" ]] ||
@@ -129,12 +129,12 @@ function memtest_s() {
 
 	gdma_fun &>$MEMTEST_GDMA_LOG &
 	# wait gdma test malloc success
-	sleep 5
+	sleep 30
 	memtester_fun "$loop" &>$MEMTEST_A53_LOG
 	wall "[MEMTEST INFO] test loop $loop end!!!, please check log file at $work_dir/logs/"
 }
 
-echo "MEMTEST VERSION: V1.1.2"
+echo "MEMTEST VERSION: V1.1.3"
 
 # prepare memtest_gdma
 dir_path="$(dirname "$(readlink -f "$0")")"
