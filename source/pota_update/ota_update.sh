@@ -4,29 +4,38 @@
 # 配置区域
 EMMC_SECTOR_B=512
 original_ifs=$IFS
+# LED灯报错方案
+led_env_str="
+setenv led_ota_flash_run 'led status off;led error on;sleep 2';
+setenv led_ota_flash_run_flash 'led status off;led error on;sleep 0.1;\
+led error off;sleep 0.1;led error on;sleep 0.1;led error off;sleep 0.1;\
+led error on;sleep 0.1;led error off;sleep 0.1;\
+led error on;sleep 0.1;led error off;sleep 0.1;led error on;'
+setenv led_ota_flash_ok 'led status on;led error off;sleep 2';
+setenv LED_OTA_ERROR_FLAG 0
+setenv led_ota_flash_error 'setenv ledei 0;led status off;led error off;sleep 2;\
+led status on; sleep 0.5; led status off;sleep 0.5;\
+while test \$ledei -lt \$LED_OTA_ERROR_FLAG;do \
+led error on;sleep 0.5;led error off;sleep 0.5;setexpr ledei \$ledei + 1;done;\
+led status on; sleep 0.5; led status off;sleep 2';
+"
 # 刷机环境准备
 flash_pre_str='
-# ota update U-Boot script
-# disable MCU watchdog
 i2c dev 1; i2c mw 0x69 1 0
-setenv update_all 1
-setenv reset_after 1
-led status off
-led error on
+run led_ota_flash_run
 '
 # 刷机完成后执行
-flash_post_str='# ota update U-Boot script
-echo all done
-
-led status on
-led error off
-setenv light 1
-
-if test "$reset_after" = "1"; then reset; fi;
-
-while true; do
-if test $light = "0"; then led status off; setenv light 1; else led status on; setenv light 0; fi;
-echo "Please remove the installation medium, then reboot"; sleep 0.5; done;
+flash_post_str='
+echo OTA UPDATE DONE
+run led_ota_flash_ok
+if test -z $UBOOT_ENV_SUPPORT_OTA_ENABLE || test $UBOOT_ENV_SUPPORT_OTA_ENABLE != 1; then
+echo "UBOOT ENV SUPPORT OTA DISABLED!!!"
+else
+echo "UBOOT ENV SUPPORT OTA ENABLED!!!"
+env default -a
+saveenv
+fi
+reset
 '
 
 rm -rf /dev/shm/ota_success_flag
@@ -58,7 +67,7 @@ fi
 
 # 检查的工具
 need_tools=("systemd" "systemd-run" "tee" "exec" "echo" "bc" "gdisk" "mkimage" "awk" "sed" "tr" \
-"gzip" "dd" "sgdisk" "fdisk" "fuser" "wall")
+"gzip" "dd" "sgdisk" "fdisk" "fuser" "wall" "head")
 for tool in "${need_tools[@]}"; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         panic "$tool: cannot find"
@@ -77,6 +86,22 @@ for element in "${SOC_MODE_CPU_MODEL[@]}"; do
 done
 if [[ "$WORK_MODE" == "ERROR" ]]; then
     panic "chip type [$CPU_MODEL] not support"
+fi
+
+# 刷机用环境变量
+if [[ "${CPU_MODEL}" == "bm1684" ]]; then
+    # v3.0.0 uboot
+otaenvsetup_str="setenv otaenvset 'if test -n \${unzip_addr};then echo \"new version uboot\"; \
+else setenv ramdisk_addr_b 0x310400000; \
+setenv ramdisk_addr_r 0x310000000; \
+setenv scriptaddr 0x300040000; \
+setenv chip_type bm1684; \
+setenv unzip_addr 0x320000000; \
+fi'
+"
+else
+otaenvsetup_str="setenv otaenvset  ';'
+"
 fi
 
 # 启动后台服务，依赖systemd
@@ -112,10 +137,10 @@ fi
 
 # 配置日志能力
 LOGFILE="$(readlink -f "${BASH_SOURCE[0]}").log"
-rm -f $LOGFILE
+rm -f $LOGFILE*
 exec > >(tee -a "$LOGFILE") 2>&1
 
-echo "[INFO] ota update tool, version: v1.1.0"
+echo "[INFO] ota update tool, version: v1.2.0"
 
 WORK_DIR="$1"
 echo "[INFO] work dir: $WORK_DIR"
@@ -194,6 +219,22 @@ OTA_NEW_GPT_END_PART_START=$(gdisk -l ${OTA_GPT_TEMP_DISK_FILE} 2>&1 | tail -n1 
 $2}')
 OTA_NEW_GPT_END_SIZE_KB=$(echo "$OTA_NEW_SECTOR_SIZE * $OTA_NEW_GPT_END_SECTOR / 1024" | bc)
 OTA_NEW_MAX_SIZE_KB=0
+# 获取需要写入的范围
+OTA_NEW_ALL_WRITE_OFFSET=0
+EMMC_SECTOR_B=512
+mapfile -t lines < <(grep "^mmc write" -a *.scr)
+for line in "${lines[@]}"; do
+    new_offset=0
+    address="$(echo "$line" | awk -F' ' '{print $(NF-1)}')"
+    size="$(echo "$line" | awk -F' ' '{print $(NF)}')"
+    address=$(($address))
+    size=$(($size))
+    new_offset=$(echo "($address + $size) * $EMMC_SECTOR_B / 1024" | bc)
+    if [ $OTA_NEW_ALL_WRITE_OFFSET -lt $new_offset ]; then
+        OTA_NEW_ALL_WRITE_OFFSET=$new_offset
+    fi
+done
+echo "[INFO] write all max offset: $OTA_NEW_ALL_WRITE_OFFSET KB"
 if [ $OTA_NEW_MAX_SIZE_KB -lt $OTA_NEW_PACKAGE_GPT_PART_SIZE_KB ]; then
     OTA_NEW_MAX_SIZE_KB=$OTA_NEW_PACKAGE_GPT_PART_SIZE_KB
 fi
@@ -202,6 +243,9 @@ if [ $OTA_NEW_MAX_SIZE_KB -lt $OTA_NEW_ALL_PART_SIZE_KB ]; then
 fi
 if [ $OTA_NEW_MAX_SIZE_KB -lt $OTA_NEW_GPT_END_SIZE_KB ]; then
     OTA_NEW_MAX_SIZE_KB=$OTA_NEW_GPT_END_SIZE_KB
+fi
+if [ $OTA_NEW_MAX_SIZE_KB -lt $OTA_NEW_ALL_WRITE_OFFSET ]; then
+    OTA_NEW_MAX_SIZE_KB=$OTA_NEW_ALL_WRITE_OFFSET
 fi
 OTA_PACK_SIZE_KB=$(ls -l --block-size=K | awk -F' ' '{print $5}' | tr -d 'K' | sed '/^$/d' | paste \
 -sd+ - | bc)
@@ -283,10 +327,11 @@ OTA_LAST_DEVICE_MOUNT_POINT=$(df | grep "${OTA_LAST_DEVICE}" | awk -F' ' '{print
 OTA_LAST_DEVICE_SIZE_KB=$(echo "$(lsblk -b ${OTA_LAST_DEVICE} | tail -n1 | awk -F' ' '{print $4}') \
 / 1024" | bc)
 OTA_PACK_NUM=$(ls -l ./ | wc -l)
-# 最后一个分区后预留50MB空间，并且每一个包开始都是一个扇区对齐
+# 最后一个分区后预留100MB空间，并且每一个包开始都是一个扇区对齐
+## 100MB空间=末尾20MB预留不写入+80MB写入升级脚本
 OTA_LAST_DEVICE_NEW_SIZE_KB=$(echo "$OTA_LAST_DEVICE_SIZE_KB - $OTA_PACK_SIZE_KB - ($OTA_PACK_NUM) \
-- (10 * 1024) - (50 * 1024)" | bc)
-OTA_PACK_WRITE_START_SECTOR=$(echo "($OTA_EMMC_SIZE_KB - $OTA_PACK_SIZE_KB - ($OTA_PACK_NUM) - (20 \
+- (10 * 1024) - (100 * 1024)" | bc)
+OTA_PACK_WRITE_START_SECTOR=$(echo "($OTA_EMMC_SIZE_KB - $OTA_PACK_SIZE_KB - ($OTA_PACK_NUM) - (100 \
 * 1024)) * (1024 / $EMMC_SECTOR_B)" | bc)
 echo "[INFO] last device $OTA_LAST_DEVICE need resize $OTA_LAST_DEVICE_SIZE_KB KB -> \
 $OTA_LAST_DEVICE_NEW_SIZE_KB KB"
@@ -428,18 +473,27 @@ echo "[INFO] Generate Upgrade Package File Address Data Table success"
 echo "[INFO] Generate Upgrade Script start"
 set >>"$LOGFILE"
 OTA_UPDATE_SCRIPT_FILE=$LOGFILE.update.cmd
-if [[ "${CPU_MODEL}" == "bm1684" ]]; then
-    # v3.0.0 uboot
-    flash_pre_str+=";if test -n \${unzip_addr};then echo \"new version uboot\";
-else setenv ramdisk_addr_b 0x310400000;
-setenv ramdisk_addr_r 0x310000000;
-setenv scriptaddr 0x300040000;
-setenv chip_type bm1684;
-setenv unzip_addr 0x320000000;
-fi"
+random_string=$(< /dev/urandom tr -dc 'A-Za-z0-9' | head -c 10)
+echo "$led_env_str" >>$OTA_UPDATE_SCRIPT_FILE
+flash_pre_str+="
+# random str: $random_string
+$otaenvsetup_str
+run otaenvset;
+setenv ota_uf_add 'setenv OTA_UPDATE_FLAG \${OTA_UPDATE_FLAG}.'
+setenv ota_uf_clear 'setenv OTA_UPDATE_FLAG .'
+if test -z \"\$OTA_UPDATE_FLAG\"; then
+run ota_uf_clear
 fi
-echo "$flash_pre_str" >$OTA_UPDATE_SCRIPT_FILE
+setenv ota_update_flag_add1 ';\
+run ota_uf_add;\
+if test \${UBOOT_ENV_SUPPORT_OTA_ENABLE} = 1; then \
+saveenv;fi;echo update flag: \${OTA_UPDATE_FLAG};\
+'
+echo \"OTA UPDATE START...[flag: \${OTA_UPDATE_FLAG}]\";
+"
+echo "$flash_pre_str" >>$OTA_UPDATE_SCRIPT_FILE
 
+echo "if test \${OTA_UPDATE_FLAG} = .; then" >>$OTA_UPDATE_SCRIPT_FILE
 if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
     echo "echo Program $OTA_FIP_FILE start
 mmc dev 0
@@ -447,16 +501,23 @@ mmc read \${ramdisk_addr_r} ${OTA_FIP_WRITE_OFFSET} ${OTA_FIP_WRITE_SIZE}
 if test \$? -eq 0; then
 sf probe
 if test \$? -ne 0; then
-led status off
-led error off
-while true; do; echo "ERROR: SPI flash not exist"; sleep 0.5; done; fi;
+setenv LED_OTA_ERROR_FLAG 3
+run led_ota_flash_error
+run led_ota_flash_error
+run led_ota_flash_error
+reset
+fi
 print chip_type
 " >>$OTA_UPDATE_SCRIPT_FILE
     if [[ " ${OTA_EMMC_FILES[@]} " == *"system."* ]]; then
         flash_update_cmd="sf update \${ramdisk_addr_r} 0x0 0x120000"
     else
-        flash_update_cmd="if test \"\$chip_type\" = "bm1684"; then sf update \${ramdisk_addr_b} 0x0 \
-0x200000; else sf update \${ramdisk_addr_r} 0x0 0x200000; fi"
+        flash_update_cmd="if test \"\$chip_type\" = \"bm1684\"; then sf update \${ramdisk_addr_b} 0x0 \
+0x200000; else sf update \${ramdisk_addr_r} 0x0 0x200000; fi; \
+echo update section A done; \
+if test \"\$chip_type\" = \"bm1684\"; then sf update \${ramdisk_addr_b} 0x200000 \
+0x200000; else sf update \${ramdisk_addr_r} 0x200000 0x200000; fi;
+echo update section B done;"
     fi
     echo "$flash_update_cmd" >>$OTA_UPDATE_SCRIPT_FILE
     echo "else
@@ -472,9 +533,12 @@ mmc read \${ramdisk_addr_r} ${OTA_FIP_WRITE_OFFSET} ${OTA_FIP_WRITE_SIZE}
 if test \$? -eq 0; then
 mmc dev 0 1
 if test \$? -ne 0; then
-led status off
-led error off
-while true; do; echo \"ERROR: switch to mmc0(part1) fail\"; sleep 0.5; done; fi;
+setenv LED_OTA_ERROR_FLAG 3
+run led_ota_flash_error
+run led_ota_flash_error
+run led_ota_flash_error
+reset
+fi
 " >>$OTA_UPDATE_SCRIPT_FILE
     for ((item = 0; item < ${#OTA_FIP_FLASH_OFFSET[@]}; item++)); do
         echo "mmc write \${ramdisk_addr_r} ${OTA_FIP_FLASH_OFFSET[$item]} \
@@ -489,40 +553,49 @@ echo Program fip.bin done
 fi
 
 echo "
-led status off;sleep 0.2;led status on;sleep 0.2;led status off;sleep 0.2;led status on;sleep \
-0.2;led status off
+run led_ota_flash_run_flash;
+run ota_update_flag_add1;
+fi
 " >>$OTA_UPDATE_SCRIPT_FILE
 
 for ((item = 0; item < ${#OTA_EMMC_FILES[@]}; item++)); do
     filename=${OTA_EMMC_FILES[$item]}
-    echo "
+    item2=$((item + 2))
+    echo "if test \${OTA_UPDATE_FLAG} = $(printf "%${item2}s" | tr ' ' '.'); then
 echo Program $filename start
 mmc dev 0
 mmc read \${ramdisk_addr_r} ${OTA_EMMC_WRITE_OFFSET["$filename"]} \
 ${OTA_EMMC_WRITE_SIZE["$filename"]}
 if test \$? -ne 0; then
-led status off
-led error off
-while true; do; echo \"ERROR: load package failed\"; sleep 0.5; done; fi;
+setenv LED_OTA_ERROR_FLAG 4
+run led_ota_flash_error
+run led_ota_flash_error
+run led_ota_flash_error
+reset;fi;
 echo
 unzip \${ramdisk_addr_r} \${unzip_addr} ${OTA_EMMC_FLASH_UNZIP_SIZE["$filename"]}
 if test \$? -ne 0; then
-led status off
-led error off
-while true; do; echo \"ERROR: load package failed\"; sleep 0.5; done; fi;
+setenv LED_OTA_ERROR_FLAG 5
+run led_ota_flash_error
+run led_ota_flash_error
+run led_ota_flash_error
+reset; fi;
 echo
 mmc write \${unzip_addr} ${OTA_EMMC_FLASH_OFFSET["$filename"]} ${OTA_EMMC_FLASH_SIZE["$filename"]}
 if test \$? -ne 0; then
-led status off
-led error off
-while true; do; echo \"ERROR: eMMC write failed\"; sleep 0.5; done; fi;
+setenv LED_OTA_ERROR_FLAG 6
+run led_ota_flash_error
+run led_ota_flash_error
+run led_ota_flash_error
+reset; fi;
 echo
 echo Program $filename done
 " >>$OTA_UPDATE_SCRIPT_FILE
 
     echo "
-led status off;sleep 0.2;led status on;sleep 0.2;led status off;sleep 0.2;led status on;sleep \
-0.2;led status off;
+run led_ota_flash_run_flash;
+run ota_update_flag_add1;
+fi
 " >>$OTA_UPDATE_SCRIPT_FILE
 
     if [[ "$(($item % 10))" == "0" ]]; then
@@ -532,8 +605,64 @@ bm_savelog mmc 0:1 ota_update_$(($item / 10)).log" >>$OTA_UPDATE_SCRIPT_FILE
 done
 
 echo "$flash_post_str" >>$OTA_UPDATE_SCRIPT_FILE
+
+mkimage -A arm64 -O linux -T script -C none -a 0 -e 0 -n "boot.scr" -d $OTA_UPDATE_SCRIPT_FILE \
+$OTA_UPDATE_SCRIPT_FILE.scr
+if [[ "$?" != "0" ]]; then
+    panic "mkimage error!!!"
+fi
+OTA_UPDATE_SCRIPT_FILE_MD5=$(md5sum $OTA_UPDATE_SCRIPT_FILE.scr | awk -F' ' '{print $1}' | tr -d '\n')
+OTA_UPDATE_SCRIPT_FILE_OFFSET=$(($OTA_UPDATE_PACK_WRITE_OFFSET))
+OTA_UPDATE_SCRIPT_FILE_SIZE=$(echo "scale=0; $(stat -c %s $OTA_UPDATE_SCRIPT_FILE.scr) / $EMMC_SECTOR_B + 1" | bc)
+OTA_UPDATE_PACK_WRITE_OFFSET=$(($OTA_UPDATE_SCRIPT_FILE_OFFSET + $OTA_UPDATE_SCRIPT_FILE_SIZE))
 echo "[INFO] Generate Upgrade Script success"
+
+# 生成刷机启动文件
+echo "[INFO] Generate Upgrade boot Script start"
+set >>"$LOGFILE"
+OTA_UPDATE_BOOT_SCRIPT_FILE=$LOGFILE.boot.cmd
+
+echo "$led_env_str" >>$OTA_UPDATE_BOOT_SCRIPT_FILE
+
+echo "$otaenvsetup_str" >>$OTA_UPDATE_BOOT_SCRIPT_FILE
+
+echo "
+setenv otacmd 'run otaenvset;mmc dev 0;\
+mmc read \${scriptaddr} $(printf '0x%X' $OTA_UPDATE_SCRIPT_FILE_OFFSET) \
+$(printf '0x%X' $OTA_UPDATE_SCRIPT_FILE_SIZE);\
+if test \$? -ne 0; then setenv LED_OTA_ERROR_FLAG 1;run led_ota_flash_error;\
+run led_ota_flash_error;run led_ota_flash_error;reset;fi;\
+source \${scriptaddr};\
+if test \$? -ne 0; then setenv LED_OTA_ERROR_FLAG 2;run led_ota_flash_error;\
+run led_ota_flash_error;run led_ota_flash_error;reset;fi;\
+'" >>$OTA_UPDATE_BOOT_SCRIPT_FILE
+
+echo '
+echo OTA update boot start
+if test -z $UBOOT_ENV_SUPPORT_OTA_ENABLE || test $UBOOT_ENV_SUPPORT_OTA_ENABLE != 1; then
+echo "UBOOT ENV SUPPORT OTA DISABLED!!!"
+setenv UBOOT_ENV_SUPPORT_OTA_ENABLE 0
+else
+echo "UBOOT ENV SUPPORT OTA ENABLED!!!"
+setenv bootcmd_otabak "${bootcmd}"
+setenv bootcmd "cvi_update || run otacmd"
+run ota_uf_clear
+saveenv
+fi
+run otacmd
+reset
+' >>$OTA_UPDATE_BOOT_SCRIPT_FILE
+
+mkimage -A arm64 -O linux -T script -C none -a 0 -e 0 -n "boot.scr" -d $OTA_UPDATE_BOOT_SCRIPT_FILE \
+$OTA_UPDATE_BOOT_SCRIPT_FILE.scr
+if [[ "$?" != "0" ]]; then
+    panic "mkimage error!!!"
+fi
+echo "[INFO] Generate Upgrade boot Script success"
+
+# 将包写入emmc
 echo "[INFO] Write packs to emmc start"
+set >>"$LOGFILE"
 dd if="$OTA_FIP_FILE" of=/dev/mmcblk0 bs=$EMMC_SECTOR_B seek=$((${OTA_FIP_WRITE_OFFSET} + 0)) \
 count=$((${OTA_FIP_WRITE_SIZE} + 0)) status=progress
 if [[ "$?" != "0" ]]; then
@@ -552,28 +681,39 @@ status=progress
         panic "Write file $filename to emmc error!!!"
     fi
 done
+dd if=/dev/zero of=/dev/mmcblk0 bs=$EMMC_SECTOR_B \
+seek=${OTA_UPDATE_SCRIPT_FILE_OFFSET} count=$(($OTA_UPDATE_SCRIPT_FILE_SIZE + 1)) status=progress
+dd if=$OTA_UPDATE_SCRIPT_FILE.scr of=/dev/mmcblk0 bs=$EMMC_SECTOR_B \
+seek=${OTA_UPDATE_SCRIPT_FILE_OFFSET} count=${OTA_UPDATE_SCRIPT_FILE_SIZE} status=progress
+if [[ "$?" != "0" ]]; then
+    panic "Write file $OTA_UPDATE_SCRIPT_FILE.scr to emmc error!!!"
+fi
+sync
 echo "[INFO] Write packs to emmc success"
 
 echo "[INFO] Write update script to boot start"
-mkimage -A arm64 -O linux -T script -C none -a 0 -e 0 -n "boot.scr" -d $OTA_UPDATE_SCRIPT_FILE \
-$OTA_UPDATE_SCRIPT_FILE.scr
-if [[ "$?" != "0" ]]; then
-    panic "mkimage error!!!"
+set >>"$LOGFILE"
+if [ ! -f boot.scr.emmc.otabak ]; then
+    cp /boot/boot.scr.emmc /boot/boot.scr.emmc.otabak
+    if [[ "$?" != "0" ]]; then
+        panic "cp /boot/boot.scr.emmc error!!!"
+    fi
 fi
-cp /boot/boot.scr.emmc /boot/boot.scr.emmc.otabak
+cp $OTA_UPDATE_BOOT_SCRIPT_FILE.scr /boot/boot.scr.emmc
 if [[ "$?" != "0" ]]; then
-    panic "cp /boot/boot.scr.emmc error!!!"
-fi
-cp $OTA_UPDATE_SCRIPT_FILE.scr /boot/boot.scr.emmc
-if [[ "$?" != "0" ]]; then
-    panic "cp $OTA_UPDATE_SCRIPT_FILE.scr error!!!"
+    panic "cp $OTA_UPDATE_BOOT_SCRIPT_FILE.scr error!!!"
 fi
 echo "[INFO] Write update script to boot success"
 
 echo "[INFO] wait sync ..."
 sync
+echo 1 >/proc/sys/vm/drop_caches
+echo 2 >/proc/sys/vm/drop_caches
+echo 3 >/proc/sys/vm/drop_caches
+sync
 
 echo "[INFO] chack pack md5sum on emmc start ..."
+set >>"$LOGFILE"
 OTA_FIP_MD5SUM_EMMC=$(dd if=/dev/mmcblk0 bs=${EMMC_SECTOR_B} \
 skip=$((${OTA_FIP_WRITE_OFFSET})) count=$((${OTA_FIP_WRITE_SIZE})) | \
 head -c $(stat -c %s $OTA_FIP_FILE) | md5sum)
@@ -594,6 +734,15 @@ and file [$OTA_EMMC_MD5SUM_FILE]"
     fi
     echo "[INFO] check file $filename md5sum: ${OTA_EMMC_MD5SUM["$filename"]}"
 done
+OTA_UPDATE_CMD_MD5=$(dd if=/dev/mmcblk0 bs=$EMMC_SECTOR_B \
+skip=${OTA_UPDATE_SCRIPT_FILE_OFFSET} \
+count=${OTA_UPDATE_SCRIPT_FILE_SIZE} \
+| head -c $(stat -c %s $OTA_UPDATE_SCRIPT_FILE.scr) | md5sum | awk -F' ' '{print $1}')
+if [[ "$OTA_UPDATE_SCRIPT_FILE_MD5" != "$OTA_UPDATE_CMD_MD5" ]]; then
+    panic "check file $OTA_UPDATE_SCRIPT_FILE.scr md5sum for emmc [${OTA_UPDATE_SCRIPT_FILE_MD5}] \
+and file [$OTA_UPDATE_CMD_MD5]"
+fi
+echo "[INFO] check file $OTA_UPDATE_SCRIPT_FILE.scr md5sum: ${OTA_UPDATE_CMD_MD5}"
 echo "[INFO] chack pack md5sum on emmc success"
 
 set >>"$LOGFILE"

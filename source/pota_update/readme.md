@@ -66,8 +66,19 @@
     1. OTA服务的日志会存放到`/dev/shm/ota_shell.sh.log`中，日志文件会有所有的log，可以用命令`sudo tail -f /dev/shm/ota_shell.sh.log`监控该文件的最新变更
     2. OTA服务会停止docker服务
     3. OTA服务会杀死所有依赖最后一个分区的进程，所以当前终端被杀死是有概率发生的
-7. 如果文件`/dev/shm/ota_success_flag`被创建，则手动重启设备即可开始刷机，刷机完成后设备会自动重启。刷机期间会ota程序会尝试驱动bootloader阶段注册的led灯，每刷入一个包会闪烁一次。
+7. 如果文件`/dev/shm/ota_success_flag`被创建，则手动重启设备即可开始刷机，刷机完成后设备会自动重启。
 8. 如果文件`/dev/shm/ota_error_flag`被创建，需要检查emmc上分区表和最后一个分区的数据是否完整。然后检查`/dev/shm/ota_shell.sh.log`文件中的报错信息。
+9. 刷机期间会ota程序会尝试驱动bootloader阶段注册的led灯，功能如下：
+    1. 正常刷机状态下为status灯灭，error灯亮
+    2. 正常刷机状态下每烧录一个包，error灯会快速地连续闪烁3次
+    3. 刷机过程全部完成后status灯亮，error灯灭
+    4. 刷机出现错误后会按照如下顺序报错：两个灯都灭2s，status灯闪烁一次，error灯闪烁n次，status灯闪烁一次。如果error灯闪烁n次，则对应了如下的错误：
+        1. n=1 从emmc加载刷机脚本错误
+        2. n=2 从emmc加载刷机脚本的格式校验错误
+        3. n=3 fip文件烧录错误
+        4. n=4 从emmc加载刷机包数据错误
+        5. n=5 将数据包解压错误
+        6. n=6 将解压后的数据写入emmc中错误
 
 > 注：如果需要保留最后一个分区，操作如下：
 >
