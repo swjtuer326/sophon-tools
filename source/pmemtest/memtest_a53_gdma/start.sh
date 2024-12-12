@@ -47,18 +47,19 @@ function memtest_s() {
 	function memtester_fun() {
 		echo "[MEMTEST INFO] memtester work_dir:$work_dir/memtester_dir"
 		pushd "$work_dir/memtester_dir"
-        loop=$1
+		loop=$1
 		echo "[MEMTEST INFO] memtester a53 test loop: $loop"
 		chmod +x memtester
 		while true; do
+			if [[ "$loop" == "0" ]]; then
+				break
+			fi
 			freeMemMB=$(free -m | grep ^Mem | awk '{print $NF - 100}')
 			./memtester ${freeMemMB}M 1
 			if [[ "$?" != "0" ]]; then
 				panic "memtester error"
 			fi
-			if [[ "$loop" == "0" ]]; then
-				break
-			elif [[ "$loop" != "-"* ]]; then
+			if [[ "$loop" != "-"* ]]; then
 				loop=$(($loop - 1))
 			fi
 			sleep 0.2
@@ -71,17 +72,17 @@ function memtest_s() {
 	function gdma_fun() {
 		echo "[MEMTEST INFO] work_dir:$work_dir"
 		pushd "$work_dir/memtest_gdma"
-        t_num=0
+		t_num=0
 		if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
 			TPU_MEM_USAGE=$(get_ion_usage "/sys/kernel/debug/ion/bm_npu_heap_dump")
 			VPU_MEM_USAGE=$(get_ion_usage "/sys/kernel/debug/ion/bm_vpu_heap_dump")
 			VPP_MEM_USAGE=$(get_ion_usage "/sys/kernel/debug/ion/bm_vpp_heap_dump")
-            t_num=4
+			t_num=4
 		elif [[ "${CPU_MODEL}" == "bm1688" ]] || [[ "${CPU_MODEL}" == "cv186ah" ]]; then
 			TPU_MEM_USAGE=$(get_ion_usage "/sys/kernel/debug/ion/cvi_npu_heap_dump")
 			VPP_MEM_USAGE=$(get_ion_usage "/sys/kernel/debug/ion/cvi_vpp_heap_dump")
 			VPU_MEM_USAGE="0"
-            t_num=4
+			t_num=4
 		fi
 		if [[ "$TPU_MEM_USAGE" != "0" ]] ||
 			[[ "$VPU_MEM_USAGE" != "0" ]] ||
@@ -104,7 +105,7 @@ function memtest_s() {
 	}
 
 	work_dir="$1"
-	loop="$2"
+	inloop="$2"
 	rm -rf "$work_dir/logs"
 	mkdir -p "$work_dir/logs"
 	MEMTEST_GDMA_LOG="$work_dir/logs/gdma.log"
@@ -130,11 +131,11 @@ function memtest_s() {
 	gdma_fun &>$MEMTEST_GDMA_LOG &
 	# wait gdma test malloc success
 	sleep 30
-	memtester_fun "$loop" &>$MEMTEST_A53_LOG
-	wall "[MEMTEST INFO] test loop $loop end!!!, please check log file at $work_dir/logs/"
+	memtester_fun "$inloop" &>$MEMTEST_A53_LOG
+	wall "[MEMTEST INFO] test loop $inloop end!!!, please check log file at $work_dir/logs/"
 }
 
-echo "MEMTEST VERSION: V1.1.3"
+echo "MEMTEST VERSION: V1.1.4"
 
 # prepare memtest_gdma
 dir_path="$(dirname "$(readlink -f "$0")")"
@@ -142,9 +143,9 @@ pushd $dir_path/memtest_gdma
 sudo bash build.sh || echo "[MEMTEST ERROR] build memtest gdma error"
 popd
 
-loop=$1
-if [[ "$loop" == "" ]]; then
-	loop=1
+inloop=$1
+if [[ "$inloop" == "" ]]; then
+	inloop=1
 fi
 
 fun_str=$(declare -f memtest_s | gzip -c - | base64)
@@ -155,14 +156,14 @@ sudo rm -f /run/systemd/transient/memtest_s.service 2>/dev/null
 sudo systemctl daemon-reload
 
 sudo systemd-run --unit=memtest_s /usr/bin/bash -c \
-	"source /dev/stdin <<< \$(echo \"$fun_str\" | base64 -d | gzip -d -c -); memtest_s $dir_path $loop;"
+	"source /dev/stdin <<< \$(echo \"$fun_str\" | base64 -d | gzip -d -c -); memtest_s $dir_path $inloop;"
 sleep 3
 sudo systemctl status memtest_s.service --no-page -l
 if [[ "$(systemctl is-active memtest_s.service)" != "active" ]]; then
 	wall "[MEMTEST ERROR] memtest_s.service start failed, please check runtime and logs at: $dir_path/logs/"
 fi
 
-echo "[MEMTEST INFO] loop: $loop"
+echo "[MEMTEST INFO] loop: $inloop"
 echo "[MEMTEST INFO] you can use 'systemctl status memtest_s.service --no-page -l' check test server status"
 echo "[MEMTEST INFO] you can use 'systemctl stop memtest_s.service' stop test server"
 echo "[MEMTEST INFO] you can check test log at: $dir_path/logs/"
