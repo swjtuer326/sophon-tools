@@ -135,7 +135,7 @@ function memtest_s() {
 	wall "[MEMTEST INFO] test loop $inloop end!!!, please check log file at $work_dir/logs/"
 }
 
-echo "MEMTEST VERSION: V1.1.4"
+echo "MEMTEST VERSION: V1.2.0"
 
 # prepare memtest_gdma
 dir_path="$(dirname "$(readlink -f "$0")")"
