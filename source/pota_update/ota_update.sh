@@ -174,6 +174,9 @@ lspci >>"$LOGFILE"
 top -n1 >>"$LOGFILE"
 
 pushd sdcard
+if [[ "$?" != "0" ]]; then
+    panic "cannot pushd $WORK_DIR/sdcard, please check files healthy"
+fi
 
 # 使用MD5文件进行刷机包校验
 echo "[INFO] md5 check start"
@@ -360,8 +363,7 @@ fi
 mount -a
 cd $WORK_DIR/sdcard
 if [[ "$?" != "0" ]]; then
-    panic "resize2fs ${OTA_LAST_DEVICE} -> ${OTA_LAST_DEVICE_NEW_SIZE_KB}K, please check if your \
-eMMC partition is healthy"
+    panic "cannot cd $WORK_DIR/sdcard, please check files healthy"
 fi
 echo "[INFO] resize last part to write update pack success"
 
