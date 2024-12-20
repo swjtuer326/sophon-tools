@@ -87,8 +87,12 @@
 > 2. 在上述操作的第5步前，执行`export LAST_PART_NOT_FLASH=LAST_PART_NOT_FLASH`
 > 3. 按照上述操作继续执行，等到OTA升级完成，第一次启动后如果发现emmc上最后一个分区挂载失败则需要执行一次`mount -a`
 
-## 使用视频
+## ota准备过程资源消耗
 
+![屏幕截图_20241220_115824](https://github.com/user-attachments/assets/79346334-6e4a-4104-806f-26eee6b5b89e)
+
+
+## 使用视频
 
 
 https://github.com/user-attachments/assets/2fc21f93-9656-4a67-bb39-91322be71814
