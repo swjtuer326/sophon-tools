@@ -14,16 +14,20 @@ function panic()
     exit 1
 }
 
+function cmd_validate()
+{
+    if command -v "$1" >/dev/null 2>&1; then
+        echo "1"
+    else
+        echo "0"
+    fi
+}
+
 function file_validate()
 {
     local file
     file=$(eval echo \$1)
     [ -r ${file} ] || panic "$i \"$file\" is not readable"
-}
-
-function suser() {
-    sudo -k || panic "failed to kill superuser privilege"
-    sudo -v || panic "failed to get superuser privilege"
 }
 
 # [jump byte] [size] [file]
@@ -44,15 +48,18 @@ function od_read_dec_big() {
     fi
 }
 
-function sudo_write_to_file() {
-    sudo echo "$2" | tee "$1" &>/dev/null
+function write_to_file() {
+    echo "$2" | tee "$1" &>/dev/null
 }
 
 # [i2c bus] [i2c addr(HEX)]
 function get_i2c_dev_ok() {
+    if [[ "$(cmd_validate i2cdetect)" == "0" ]]; then
+        echo "err"
+    fi
     i2c_bus=$1
     i2c_add=$2
-    info=$(i2cdetect -y ${i2c_bus} 0x${i2c_add} 0x${i2c_add} 2>/dev/null | grep ${i2c_add} | tr -d ' ' | sed 's/.*://')
+    info=$(i2cdetect -y -r ${i2c_bus} 0x${i2c_add} 0x${i2c_add} 2>/dev/null | grep ${i2c_add} | tr -d ' ' | sed 's/.*://')
     if [[ "$info" == "$i2c_add" ]]; then
         echo "ok"
     else
@@ -221,11 +228,14 @@ function jsonq() {
     }'
 }
 
-# suser
 file_validate /proc/cpuinfo
 file_validate /proc/stat
 
 if [[ "$1" == "server" ]] && [[ ! "$2" == "" ]] && [[ ! "$3" == "" ]]; then
+        if [[ "$(cmd_validate systemd-run)" == "0" ]] || [[ "$(cmd_validate systemctl)" == "0" ]]; then
+            echo "cannot find systemd at systemd, cannot run as server mode!!!";
+            exit -1
+        fi
         log_file="$(readlink -f "$2")"
         loop_wait_time="$3"
         get_info_pwd="$(readlink -f "$0")"
@@ -290,7 +300,7 @@ if [[ "${WORK_MODE}" == "SOC" ]]; then
         SHUTDOWN_REASON_HEX_MAP["00000082"]="REBOOT"
         SHUTDOWN_REASON_HEX_MAP["00000083"]="OVER_HEAT"
         SHUTDOWN_REASON_HEX_MAP["00000084"]="WATCHDOG"
-        for bootfile in $(ls /root/.boot/); do
+        for bootfile in $(ls /root/.boot/ 2>/dev/null); do
             S_INFO=$(od_read_hex 0 4 /root/.boot/$bootfile)
             F_INFO=$(echo $bootfile | sed 's|.txt||g')
             REASON="${SHUTDOWN_REASON_HEX_MAP["$S_INFO"]}"
@@ -438,13 +448,13 @@ TPU_CLK=""
 VPU_CLK=""
 if [[ "${WORK_MODE}" == "SOC" ]]; then
     if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-        CPU_CLK=$(cat /sys/kernel/debug/clk/clk_div_a53_1/clk_rate | tr -d '\0')
-        TPU_CLK=$(cat /sys/kernel/debug/clk/tpll_clock/clk_rate | tr -d '\0')
-        VPU_CLK=$(cat /sys/kernel/debug/clk/clk_gate_axi10/clk_rate | tr -d '\0')
+        CPU_CLK=$(cat /sys/kernel/debug/clk/clk_div_a53_1/clk_rate 2>/dev/null| tr -d '\0')
+        TPU_CLK=$(cat /sys/kernel/debug/clk/tpll_clock/clk_rate 2>/dev/null| tr -d '\0')
+        VPU_CLK=$(cat /sys/kernel/debug/clk/clk_gate_axi10/clk_rate 2>/dev/null| tr -d '\0')
     elif [[ "${CPU_MODEL}" == "bm1688" ]] || [[ "${CPU_MODEL}" == "cv186ah" ]]; then
-        CPU_CLK=$(cat /sys/kernel/debug/clk/clk_a53pll/clk_rate | tr -d '\0')
-        TPU_CLK=$(cat /sys/kernel/debug/clk/clk_tpll/clk_rate | tr -d '\0')
-        VPU_CLK=$(cat /sys/kernel/debug/clk/clk_cam0pll/clk_rate | tr -d '\0')
+        CPU_CLK=$(cat /sys/kernel/debug/clk/clk_a53pll/clk_rate 2>/dev/null| tr -d '\0')
+        TPU_CLK=$(cat /sys/kernel/debug/clk/clk_tpll/clk_rate 2>/dev/null| tr -d '\0')
+        VPU_CLK=$(cat /sys/kernel/debug/clk/clk_cam0pll/clk_rate 2>/dev/null| tr -d '\0')
         VPU_CLK=$(( VPU_CLK / 2 ))
     fi
 fi
@@ -492,7 +502,7 @@ declare -i FAN_FREQUENCY=0
 declare -i FAN_RPM=0
 if [[ "${WORK_MODE}" == "SOC" ]]; then
         if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-                sudo_write_to_file /sys/class/bm-tach/bm-tach-0/enable 1
+                write_to_file /sys/class/bm-tach/bm-tach-0/enable 1
                 FAN_FREQUENCY=$(cat /sys/class/bm-tach/bm-tach-0/fan_speed | sed 's|fan_speed:||g')
                 if [[ "$FAN_FREQUENCY" != "0" ]]; then
                         FAN_RPM=$(echo | awk "{printf \"%.0f\n\", 60 / (1 / $FAN_FREQUENCY * 2) }" 2>/dev/null)
@@ -545,12 +555,14 @@ fi
 V12_POWER=""
 if [[ "${WORK_MODE}" == "SOC" ]]; then
         if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-                pw_h=$(i2cget -f -y 1 0x17 0x25)
-                pw_l=$(i2cget -f -y 1 0x17 0x24)
+            if [[ "$(cmd_validate i2cget)" == "1" ]]; then
+                pw_h=$(i2cget -f -y 1 0x17 0x25 2>/dev/null)
+                pw_l=$(i2cget -f -y 1 0x17 0x24 2>/dev/null)
                 pw_dh=$((pw_h))
                 pw_dl=$((pw_l))
                 pw_dh_256=$(($pw_dh * 256))
                 V12_POWER=$(($pw_dh_256 + $pw_dl))
+            fi
         fi
 fi
 
@@ -558,9 +570,9 @@ fi
 TPU_USAGE=""
 if [[ "${WORK_MODE}" == "SOC" ]]; then
     if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-        TPU_USAGE=$(cat /sys/class/bm-tpu/bm-tpu0/device/npu_usage | awk -F':' '{print $2}' | awk '{print $1}')
+        TPU_USAGE=$(cat /sys/class/bm-tpu/bm-tpu0/device/npu_usage 2>/dev/null| awk -F':' '{print $2}' | awk '{print $1}')
     elif [[ "${CPU_MODEL}" == "bm1688" ]] || [[ "${CPU_MODEL}" == "cv186ah" ]]; then
-        TPU_USAGE=$(cat /sys/class/bm-tpu/bm-tpu0/device/npu_usage | awk -F':' '{print $2}' | awk '{print $1}' | tr '\n' ' ' | sed 's/ *$//')
+        TPU_USAGE=$(cat /sys/class/bm-tpu/bm-tpu0/device/npu_usage 2>/dev/null| awk -F':' '{print $2}' | awk '{print $1}' | tr '\n' ' ' | sed 's/ *$//')
     fi
 fi
 
@@ -569,10 +581,10 @@ VPU_USAGE=""
 VPP_USAGE=""
 if [[ "${WORK_MODE}" == "SOC" ]]; then
     if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-        VPU_USAGE=$(cat /proc/vpuinfo | tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/ $//' | sed 's/,$//')
-        VPP_USAGE=$(cat /proc/vppinfo | tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/ $//' | sed 's/,$//')
+        VPU_USAGE=$(cat /proc/vpuinfo 2>/dev/null| tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/ $//' | sed 's/,$//')
+        VPP_USAGE=$(cat /proc/vppinfo 2>/dev/null| tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/ $//' | sed 's/,$//')
     elif [[ "${CPU_MODEL}" == "bm1688" ]] || [[ "${CPU_MODEL}" == "cv186ah" ]]; then
-        VPU_USAGE=$(cat /proc/soph/vpuinfo | tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/ $//')
+        VPU_USAGE=$(cat /proc/soph/vpuinfo 2>/dev/null| tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/ $//')
     fi
 fi
 
@@ -615,7 +627,10 @@ KERNEL_BUILD_TIME="$(uname -v)"
 SYSTEM_TYPE=$(head -n 1 /etc/issue 2>/dev/null | sed 's| \\n||g' | sed 's| \\l||g')
 
 # DOCKER_VERSION
-DOCKER_VERSION=$(docker --version 2>/dev/null | sed 's| \\n||g')
+DOCKER_VERSION=""
+if [[ "$(cmd_validate docker)" == "1" ]]; then
+    DOCKER_VERSION=$(docker --version 2>/dev/null | sed 's| \\n||g')
+fi
 
 # MMC0_CID
 if [[ "${WORK_MODE}" == "SOC" ]]; then

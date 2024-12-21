@@ -49,6 +49,25 @@ https://github.com/user-attachments/assets/819bf5cd-c619-41b9-9e88-1c4dcba9c70a
 
 1. get_info默认不会使用pmbus工具记录PMIC相关信息，如果需要，请确保除了get_info之外没有其他任何程序在操作PMIC，然后配置环境变量`GET_INFO_PMBUS_ENABLE=1`后运行get_info即可
 
+#### 高度裁剪的系统环境
+
+1. 对于一些高度裁剪的系统，该脚本中大部分命令可能找不到。可以从本仓库的release页面下载最新的 staticBinTools_arm64 包，然后使用类似如下的方式进行调用
+	``` bash
+	root@bm1684:/xxx$ ls
+	get_info.sh  staticBinTools_arm64
+	root@bm1684:/xxx$ PATH="$(pwd)/staticBinTools_arm64/:$PATH" bash get_info.sh
+	BOOT_TIME(s)|5356.50|
+	DATE_TIME|2024-12-21 17:35:36 CST|
+	WORK_MODE|SOC|
+	CPU_MODEL|bm1684x|
+	# ...
+	```
+2. 同时，工具自带的 server 模式在这类系统中通常也无法正常使用。推荐使用如下方式进行循环调用：
+	``` bash
+	# 如果需要放置到后台，可以将该命令写入一个脚本文件，然后后台启动该脚本文件
+	while true; do sleep 1; PATH="$(pwd)/staticBinTools_arm64:$PATH" bash get_info.sh 2>/dev/null 1>> get_info.log; done;
+	```
+
 ### get_info_log_to_png.py
 
 ``` bash
