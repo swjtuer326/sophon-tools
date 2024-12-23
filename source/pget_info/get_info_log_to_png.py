@@ -40,7 +40,7 @@ basic_time=0
 with open(log_name,'r') as file:
     while True:
         line = file.readline()
-        if not line: 
+        if not line:
             break
         if line.find("BOOT_TIME(s)") >= 0:
             ost_time = int(line.split("|")[-2].split(".")[0])/60
@@ -51,11 +51,17 @@ with open(log_name,'r') as file:
                     reboot_flag.append(basic_time)
             boot_ost_time_data.append(ost_time)
             boot_time_data.append(curr_time)
-        for item in configs["info"]:
-            if line.find(item["name"]) >= 0:
+        for index, item in enumerate(configs["info"]):
+            if line.find(item["info_name"]) >= 0:
                 if infos_data.get(item["name"]) is None:
                     infos_data[item["name"]] = []
-                item_data=line.split("|")[-2].split(" ")[0 + item["sampling_index"][0]].split(",")[0 + item["sampling_index"][1]]
+                try:
+                    item_data=line.split("|")[-2].split(" ")[0 + item["sampling_index"][0]].split(",")[0 + item["sampling_index"][1]]
+                except Exception as e:
+                    item_data = ""
+                    del configs["info"][index]
+                    print("Warring: Index ", item, " cannot find in log file, del it")
+                    continue
                 if item_data == "":
                     data = Decimal(0)
                 else:
@@ -118,7 +124,6 @@ for j in range(cols):
             ax.set_ylim(bottom = configs["info"][j*rows+i].get("min"))
         if configs["info"][j*rows+i].get("max") is not None:
             ax.set_ylim(top = configs["info"][j*rows+i].get("max"))
-        ax.yaxis.set_major_locator(MaxNLocator(min(20, 40)))
         ax.xaxis.set_major_locator(AutoLocator())
         ax.xaxis.set_major_formatter(ScalarFormatter(useOffset=False))
         ax.yaxis.set_major_locator(AutoLocator())
@@ -142,6 +147,7 @@ for j in range(cols):
         ax.set_title(configs["info"][j*rows+i]["y_name"])
         ax.set_xlabel("TIME(min)")
         ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
+        ax.yaxis.set_major_locator(MaxNLocator(50))
         ax.autoscale_view()
         ax.grid(True, alpha=0.5)
 fig.tight_layout()

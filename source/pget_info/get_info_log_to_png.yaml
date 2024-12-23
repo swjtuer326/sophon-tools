@@ -1,62 +1,134 @@
-point_size: 0.5
+point_size: 2
 info:
 - name: BOOT_TIME
+  info_name: BOOT_TIME
   sampling_index: [0, 0]
   y_name: BOOT TIME(s)
   min: 0
 - name: CHIP_TEMP
+  info_name: CHIP_TEMP
   sampling_index: [0, 0]
   y_name: "CHIP TEMP(℃)"
   max: 120
   min: -10
   y_flag: [0, 85, 90, 95, 100, 105]
 - name: BOARD_TEMP
+  info_name: BOARD_TEMP
   sampling_index: [0, 0]
   y_name: "BOARD TEMP(℃)"
   max: 120
   min: -10
   y_flag: [0, 85, 90, 95, 100, 105]
 - name: TPU_CLK
+  info_name: TPU_CLK
   sampling_index: [0, 0]
   y_name: TPU CLK(Hz)
   max: 1100000000
   min: 0
   y_flag: [950000000]
 - name: CPU_CLK
+  info_name: CPU_CLK
   sampling_index: [0, 0]
   y_name: CPU CLK(Hz)
   max: 2400000000
   min: 0
   y_flag: [2300000000]
 - name: VPU_CLK
+  info_name: VPU_CLK
   sampling_index: [0, 0]
   y_name: VPU CLK(Hz)
   max: 900000000
   min: 0
   y_flag: [500000000, 800000000]
 - name: TPU_USAGE
+  info_name: TPU_USAGE
   sampling_index: [0, 0]
   y_name: TPU USAGE(%)
   max: 100
   min: 0
+- name: VPU_USAGE0
+  info_name: VPU_USAGE
+  sampling_index: [0, 0]
+  y_name: VPU USAGE0(%)
+  max: 100
+  min: 0
+- name: VPU_USAGE1
+  info_name: VPU_USAGE
+  sampling_index: [0, 1]
+  y_name: VPU USAGE1(%)
+  max: 100
+  min: 0
+- name: VPU_USAGE2
+  info_name: VPU_USAGE
+  sampling_index: [0, 2]
+  y_name: VPU USAGE2(%)
+  max: 100
+  min: 0
+- name: VPU_USAGE3
+  info_name: VPU_USAGE
+  sampling_index: [0, 3]
+  y_name: VPU USAGE3(%)
+  max: 100
+  min: 0
+- name: VPU_USAGE4
+  info_name: VPU_USAGE
+  sampling_index: [0, 4]
+  y_name: VPU USAGE4(%)
+  max: 100
+  min: 0
+- name: VPP_USAGE0
+  info_name: VPP_USAGE
+  sampling_index: [0, 0]
+  y_name: VPP USAGE0(%)
+  max: 100
+  min: 0
+- name: VPP_USAGE1
+  info_name: VPP_USAGE
+  sampling_index: [0, 1]
+  y_name: VPP USAGE1(%)
+  max: 100
+  min: 0
+- name: VPP_USAGE2
+  info_name: VPP_USAGE
+  sampling_index: [0, 2]
+  y_name: VPP USAGE2(%)
+  max: 100
+  min: 0
+- name: VPP_USAGE3
+  info_name: VPP_USAGE
+  sampling_index: [0, 3]
+  y_name: VPP USAGE3(%)
+  max: 100
+  min: 0
+- name: VPP_USAGE4
+  info_name: VPP_USAGE
+  sampling_index: [0, 4]
+  y_name: VPP USAGE4(%)
+  max: 100
+  min: 0
 - name: CPU_ALL_USAGE
+  info_name: CPU_ALL_USAGE
   sampling_index: [0, 0]
   y_name: CPU USAGE(%)
   max: 100
   min: 0
 - name: V12_POWER
+  info_name: V12_POWER
   sampling_index: [0, 0]
   y_name: SM7 POWER(mW)
   max: 80000
   min: 0
   y_flag: [60000]
 - name: VTPU_POWER
+  info_name: VTPU_POWER
   sampling_index: [0, 0]
   y_name: BM1684X TPU POWER(W)
 - name: VDDC_POWER
+  info_name: VDDC_POWER
   sampling_index: [0, 0]
   y_name: BM1684X VDDC POWER(W)
 - name: SYSTEM_MEM_USAGE
+  info_name: SYSTEM_MEM_USAGE
   sampling_index: [0, 0]
   y_name: SYSTEM MEM USAGE(%)
   max: 100

@@ -1,8 +1,6 @@
 #!/bin/bash
 
 shopt -s compat31
-temp_file=$(mktemp)
-trap 'rm -f "$temp_file"' EXIT
 
 function panic()
 {
@@ -322,15 +320,14 @@ if [[ "${WORK_MODE}" == "SOC" ]]; then
         DTS_MEM_FILE="/proc/device-tree/memory*/reg"
     fi
     DDR_SIZE=0
-    od --endian=big -An -v -t u4 -w16 ${DTS_MEM_FILE} | while read -r line
-    do
+    IFS=$'\n'
+    for line in $(od --endian=big -An -v -t u4 -w16 ${DTS_MEM_FILE}); do
         size1=$(echo "$line" | awk '{print $3}')
         size2=$(echo "$line" | awk '{print $4}')
         ddr_s=$(( size1 * 1024 * 1024 * 1024 * 4 + size2 ))
         DDR_SIZE=$((DDR_SIZE + ddr_s))
-        echo "${DDR_SIZE}" > "$temp_file"
     done
-    DDR_SIZE=$(cat "$temp_file" | tr -d '\0')
+    IFS=$' \t\n'
     DDR_SIZE=$(( DDR_SIZE / 1024 / 1024 ))
 fi
 
@@ -484,7 +481,7 @@ fi
 # CHIP_TEMP
 declare -i CHIP_TEMP=0
 if [[ "${WORK_MODE}" == "SOC" ]]; then
-    CHIP_TEMP=$(cat /sys/class/thermal/thermal_zone0/temp | tr -d '\0')
+    CHIP_TEMP=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null| tr -d '\0')
     CHIP_TEMP=$(( CHIP_TEMP / 1000 ))
 fi
 
@@ -492,7 +489,7 @@ fi
 declare -i BOARD_TEMP=0
 if [[ "${WORK_MODE}" == "SOC" ]]; then
         if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
-                BOARD_TEMP=$(cat /sys/class/thermal/thermal_zone1/temp | tr -d '\0')
+                BOARD_TEMP=$(cat /sys/class/thermal/thermal_zone1/temp 2>/dev/null| tr -d '\0')
                 BOARD_TEMP=$(( BOARD_TEMP / 1000 ))
         fi
 fi
@@ -503,7 +500,7 @@ declare -i FAN_RPM=0
 if [[ "${WORK_MODE}" == "SOC" ]]; then
         if [[ "${CPU_MODEL}" == "bm1684x" ]] || [[ "${CPU_MODEL}" == "bm1684" ]]; then
                 write_to_file /sys/class/bm-tach/bm-tach-0/enable 1
-                FAN_FREQUENCY=$(cat /sys/class/bm-tach/bm-tach-0/fan_speed | sed 's|fan_speed:||g')
+                FAN_FREQUENCY=$(cat /sys/class/bm-tach/bm-tach-0/fan_speed 2>/dev/null| sed 's|fan_speed:||g')
                 if [[ "$FAN_FREQUENCY" != "0" ]]; then
                         FAN_RPM=$(echo | awk "{printf \"%.0f\n\", 60 / (1 / $FAN_FREQUENCY * 2) }" 2>/dev/null)
                 else
@@ -584,7 +581,7 @@ if [[ "${WORK_MODE}" == "SOC" ]]; then
         VPU_USAGE=$(cat /proc/vpuinfo 2>/dev/null| tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/ $//' | sed 's/,$//')
         VPP_USAGE=$(cat /proc/vppinfo 2>/dev/null| tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/ $//' | sed 's/,$//')
     elif [[ "${CPU_MODEL}" == "bm1688" ]] || [[ "${CPU_MODEL}" == "cv186ah" ]]; then
-        VPU_USAGE=$(cat /proc/soph/vpuinfo 2>/dev/null| tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/ $//')
+        VPU_USAGE=$(cat /proc/soph/vpuinfo 2>/dev/null| tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/ $//' | sed 's/,$//')
     fi
 fi
 
@@ -697,7 +694,7 @@ if [[ "${WORK_MODE}" == "PCIE" ]]; then
             eval "CARD${i}_DDR_FREQ+='$(cat /proc/bmsophon/card${i}/bmsophon${k}/clk | grep ^ddr: | awk '{print $2}') '"
             eval "CARD${i}_TPU_USAGE+='$(cat /sys/class/bm-sophon/bm-sophon${k}/device/npu_usage | awk -F':' '{print $2}' | awk '{print $1}') '"
             eval "CARD${i}_VPU_USAGE+='$(cat /proc/bmsophon/card${i}/bmsophon${k}/media | tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/,$//'; echo ' ')'"
-                        eval "CARD${i}_JPU_USAGE+='$(cat /proc/bmsophon/card${i}/bmsophon${k}/jpu | tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/,$//'; echo ' ')'"
+            eval "CARD${i}_JPU_USAGE+='$(cat /proc/bmsophon/card${i}/bmsophon${k}/jpu | tr -d '\n' | grep -ao ':[0-9]*%' | tr -d ':' | tr '\n' ',' | tr -d '%' | sed 's/,$//'; echo ' ')'"
         done
         eval "CARD${i}_CHIP_DDR_SIZE=\$(echo \$CARD${i}_CHIP_DDR_SIZE | sed 's/ *$//')"
         eval "CARD${i}_CHIP_HEAP_SIZE=\$(echo \$CARD${i}_CHIP_HEAP_SIZE | sed 's/ *$//')"
@@ -708,12 +705,9 @@ if [[ "${WORK_MODE}" == "PCIE" ]]; then
         eval "CARD${i}_DDR_FREQ=\$(echo \$CARD${i}_DDR_FREQ | sed 's/ *$//')"
         eval "CARD${i}_TPU_USAGE=\$(echo \$CARD${i}_TPU_USAGE | sed 's/ *$//')"
         eval "CARD${i}_VPU_USAGE=\$(echo \$CARD${i}_VPU_USAGE | sed 's/ *$//')"
-                eval "CARD${i}_JPU_USAGE=\$(echo \$CARD${i}_JPU_USAGE | sed 's/ *$//')"
+        eval "CARD${i}_JPU_USAGE=\$(echo \$CARD${i}_JPU_USAGE | sed 's/ *$//')"
     done
 fi
-
-# del temp file
-rm -f "$temp_file"
 
 # VIEW INFO
 if [[ "${WORK_MODE}" == "SOC" ]]; then
@@ -803,4 +797,5 @@ else
     echo "CPUS_USAGE(%)|${CPUS_USAGE}|"
     echo "SYSTEM_MEM_USAGE(%)|${SYSTEM_MEM_USAGE}|"
 fi
+
 
