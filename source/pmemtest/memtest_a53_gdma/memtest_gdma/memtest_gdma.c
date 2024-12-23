@@ -90,12 +90,83 @@ static int parse_shape(const char* arg, unsigned long* shape) {
   return i;
 }
 
+static int test_one_cmp(bm_handle_t bm_handle, bm_device_mem_t* dst,
+                        bm_device_mem_t* src, unsigned char* sys_buffer,
+                        unsigned char* sys_buffer2, unsigned int id,
+                        unsigned char cmp_every) {
+  if (bm_memcpy_d2s(bm_handle, sys_buffer2, *dst) != BM_SUCCESS) {
+    printf("[ERROR %d] bm_memcpy_d2s from 0x%lX, dev %d failed\r\n", id,
+           dst->u.device.device_addr, dev_id);
+    exit(EXIT_FAILURE);
+  }
+  if (memcmp(sys_buffer, sys_buffer2, shape_size) == 0) {
+    return 0;
+  } else {
+    size_t eaddr = cmp_find_error_addr(sys_buffer, sys_buffer2, shape_size);
+    if (cmp_every == 1) {
+      if (memcmp(sys_buffer, sys_buffer2, shape_size) != 0) {
+        size_t eaddr = cmp_find_error_addr(sys_buffer, sys_buffer2, shape_size);
+        if (src != NULL)
+          printf(
+              "[ERROR %d] memcmp error at offset 0x%lX: 0x%X <-> 0x%X, device "
+              "mem 0x%lX->0x%lX, size 0x%llX\r\n",
+              id, eaddr, sys_buffer[eaddr], sys_buffer2[eaddr],
+              src->u.device.device_addr, dst->u.device.device_addr, shape_size);
+        else
+          printf(
+              "[ERROR %d] memcmp error at offset 0x%lX: 0x%X <-> 0x%X, device "
+              "mem sys->0x%lX, size 0x%llX\r\n",
+              id, eaddr, sys_buffer[eaddr], sys_buffer2[eaddr],
+              dst->u.device.device_addr, shape_size);
+      }
+    } else {
+      printf("[ERROR %d] memcmp error at offset 0x%lX: 0x%X <-> 0x%X\r\n", id,
+             eaddr, sys_buffer[eaddr], sys_buffer2[eaddr]);
+    }
+    return -1;
+  }
+}
+
+static int test_one_memcp(bm_handle_t bm_handle, bm_device_mem_t* dst,
+                          bm_device_mem_t* src, unsigned char* sys_buffer,
+                          unsigned char* sys_buffer2, unsigned int id,
+                          unsigned char cmp_every) {
+#if USE_GDMA_WITH_CORE
+  if (bm_memcpy_d2d_byte_with_core(bm_handle, *dst, 0, *src, 0, shape_size,
+                                   id % core_num) != BM_SUCCESS) {
+#else
+  if (bm_memcpy_d2d_byte(bm_handle, *dst, 0, *src, 0, shape_size) !=
+      BM_SUCCESS) {
+#endif
+    printf("[ERROR %d] bm_memcpy_d2d_byte 0x%lX -> 0x%lX, dev %d failed\r\n",
+           id, src->u.device.device_addr, dst->u.device.device_addr, dev_id);
+    exit(EXIT_FAILURE);
+  }
+  if (cmp_every == 1) {
+    if (bm_memcpy_d2s(bm_handle, sys_buffer2, *dst) != BM_SUCCESS) {
+      printf("[ERROR %d] bm_memcpy_d2s from 0x%lX, dev %d failed\r\n", id,
+             dst->u.device.device_addr, dev_id);
+      exit(EXIT_FAILURE);
+    }
+    if (memcmp(sys_buffer, sys_buffer2, shape_size) != 0) {
+      size_t eaddr = cmp_find_error_addr(sys_buffer, sys_buffer2, shape_size);
+      printf(
+          "[ERROR %d] memcmp error at offset 0x%lX: 0x%X <-> 0x%X, device mem "
+          "0x%lX->0x%lX, size 0x%llX\r\n",
+          id, eaddr, sys_buffer[eaddr], sys_buffer2[eaddr],
+          src->u.device.device_addr, dst->u.device.device_addr, shape_size);
+      return -1;
+    }
+  }
+  return 0;
+}
+
 static int test_one_shot(bm_handle_t bm_handle, bm_device_mem_t* dev_mem_p,
                          unsigned char* sys_buffer, unsigned char* sys_buffer2,
                          unsigned int start_index, unsigned int end_index,
-                         unsigned int skip, unsigned int step,
-                         unsigned int id, unsigned char cmp_every) {
-  int test_ret = 0, temp_index = 0;
+                         unsigned int skip, unsigned int step, unsigned int id,
+                         unsigned char cmp_every) {
+  int temp_index = 0;
   if (start_index > end_index) {
     temp_index = start_index;
     start_index = end_index;
@@ -119,75 +190,31 @@ static int test_one_shot(bm_handle_t bm_handle, bm_device_mem_t* dev_mem_p,
            dev_mem_p[start_index].u.device.device_addr, dev_id);
     exit(EXIT_FAILURE);
   }
+  if (0 != test_one_cmp(bm_handle, &dev_mem_p[start_index], NULL, sys_buffer,
+                        sys_buffer2, id, cmp_every))
+    return -1;
   long i = start_index;
   for (; i < end_index; i += step) {
-#if USE_GDMA_WITH_CORE
-    if (bm_memcpy_d2d_byte_with_core(bm_handle, dev_mem_p[i + step], 0, dev_mem_p[i], 0,
-                           shape_size, id % core_num) != BM_SUCCESS) {
-#else
-    if (bm_memcpy_d2d_byte(bm_handle, dev_mem_p[i + step], 0, dev_mem_p[i], 0,
-                           shape_size) != BM_SUCCESS) {
-#endif
-      printf("[ERROR %d] bm_memcpy_d2d_byte 0x%lX -> 0x%lX, dev %d failed\r\n",
-             id, dev_mem_p[i].u.device.device_addr,
-             dev_mem_p[i + step].u.device.device_addr, dev_id);
-      exit(EXIT_FAILURE);
-    }
-    if (cmp_every == 1) {
-      if (bm_memcpy_d2s(bm_handle, sys_buffer2, dev_mem_p[i]) != BM_SUCCESS) {
-        printf("[ERROR %d] bm_memcpy_d2s from 0x%lX, dev %d failed\r\n", id,
-              dev_mem_p[i].u.device.device_addr, dev_id);
-        exit(EXIT_FAILURE);
-      }
-      if (memcmp(sys_buffer, sys_buffer2, shape_size) == 0) {
-        test_ret = 0;
-      } else {
-        size_t eaddr = cmp_find_error_addr(sys_buffer, sys_buffer2, shape_size);
-        printf("[ERROR %d] memcmp error at addr 0x%lX: 0x%X <-> 0x%X, device mem 0x%lX->0x%lX, size 0x%llX\r\n", id,
-              eaddr, sys_buffer[eaddr], sys_buffer2[eaddr], dev_mem_p[i - step].u.device.device_addr,
-              dev_mem_p[i].u.device.device_addr, shape_size);
-        test_ret = -1;
-      }
-    }
+    if (0 != test_one_memcp(bm_handle, &dev_mem_p[i + step], &dev_mem_p[i],
+                            sys_buffer, sys_buffer2, id, cmp_every))
+      return -1;
   }
   i -= step;
   for (; i > start_index; i -= step) {
-#if USE_GDMA_WITH_CORE
-    if (bm_memcpy_d2d_byte_with_core(bm_handle, dev_mem_p[i - step], 0, dev_mem_p[i], 0,
-                           shape_size, id % core_num) != BM_SUCCESS) {
-#else
-    if (bm_memcpy_d2d_byte(bm_handle, dev_mem_p[i - step], 0, dev_mem_p[i], 0,
-                           shape_size) != BM_SUCCESS) {
-#endif
-      printf("[ERROR %d] bm_memcpy_d2d_byte 0x%lX -> 0x%lX, dev %d failed\r\n",
-             id, dev_mem_p[i].u.device.device_addr,
-             dev_mem_p[i - step].u.device.device_addr, dev_id);
-      exit(EXIT_FAILURE);
-    }
+    if (0 != test_one_memcp(bm_handle, &dev_mem_p[i - step], &dev_mem_p[i],
+                            sys_buffer, sys_buffer2, id, cmp_every))
+      return -1;
   }
-  if (bm_memcpy_d2s(bm_handle, sys_buffer2, dev_mem_p[i]) != BM_SUCCESS) {
-    printf("[ERROR %d] bm_memcpy_d2s from 0x%lX, dev %d failed\r\n", id,
-           dev_mem_p[i].u.device.device_addr, dev_id);
-    exit(EXIT_FAILURE);
-  }
-  if (memcmp(sys_buffer, sys_buffer2, shape_size) == 0) {
-    test_ret = 0;
-  } else {
-    size_t eaddr = cmp_find_error_addr(sys_buffer, sys_buffer2, shape_size);
-    printf("[ERROR %d] memcmp error at addr 0x%lX: 0x%X <-> 0x%X\r\n", id,
-           eaddr, sys_buffer[eaddr], sys_buffer2[eaddr]);
-    test_ret = -1;
-  }
-  return test_ret;
+  return test_one_cmp(bm_handle, &dev_mem_p[i], &dev_mem_p[start_index],
+                      sys_buffer, sys_buffer2, id, 0);
 }
 
 static int test_two_edge(bm_handle_t bm_handle, bm_device_mem_t* dev_mem_p,
                          unsigned char* sys_buffer, unsigned char* sys_buffer2,
                          unsigned int start_index1, unsigned int end_index1,
                          unsigned int start_index2, unsigned int end_index2,
-                         unsigned int skip, unsigned int step,
-                         unsigned int id, unsigned char cmp_every) {
-  int test_ret = 0;
+                         unsigned int skip, unsigned int step, unsigned int id,
+                         unsigned char cmp_every) {
   unsigned int temp_index = 0, end_index = 0;
   if (start_index1 > end_index1) {
     temp_index = start_index1;
@@ -237,121 +264,35 @@ static int test_two_edge(bm_handle_t bm_handle, bm_device_mem_t* dev_mem_p,
            dev_mem_p[start_index1].u.device.device_addr, dev_id);
     exit(EXIT_FAILURE);
   }
+  if (0 != test_one_cmp(bm_handle, &dev_mem_p[start_index1], NULL, sys_buffer,
+                        sys_buffer2, id, cmp_every))
+    return -1;
   long i = 0;
   for (; i < need_loop; i += step) {
-#if USE_GDMA_WITH_CORE
-    if (bm_memcpy_d2d_byte_with_core(bm_handle, dev_mem_p[start_index2 + i], 0,
-                           dev_mem_p[start_index1 + i], 0,
-                           shape_size,id % core_num) != BM_SUCCESS) {
-#else
-    if (bm_memcpy_d2d_byte(bm_handle, dev_mem_p[start_index2 + i], 0,
-                           dev_mem_p[start_index1 + i], 0,
-                           shape_size) != BM_SUCCESS) {
-#endif
-      printf("[ERROR %d] bm_memcpy_d2d_byte 0x%lX -> 0x%lX, dev %d failed\r\n",
-             id, dev_mem_p[start_index1 + i].u.device.device_addr,
-             dev_mem_p[start_index2 + i].u.device.device_addr, dev_id);
-      exit(EXIT_FAILURE);
-    }
-#if USE_GDMA_WITH_CORE
-    if (bm_memcpy_d2d_byte_with_core(bm_handle, dev_mem_p[start_index1 + i + step], 0,
-                           dev_mem_p[start_index2 + i], 0,
-                           shape_size,id % core_num) != BM_SUCCESS) {
-#else
-    if (bm_memcpy_d2d_byte(bm_handle, dev_mem_p[start_index1 + i + step], 0,
-                           dev_mem_p[start_index2 + i], 0,
-                           shape_size) != BM_SUCCESS) {
-#endif
-      printf("[ERROR %d] bm_memcpy_d2d_byte 0x%lX -> 0x%lX, dev %d failed\r\n",
-             id, dev_mem_p[start_index1 + i].u.device.device_addr,
-             dev_mem_p[start_index2 + i].u.device.device_addr, dev_id);
-      exit(EXIT_FAILURE);
-    }
+    if (0 != test_one_memcp(bm_handle, &dev_mem_p[start_index2 + i],
+                            &dev_mem_p[start_index1 + i], sys_buffer,
+                            sys_buffer2, id, cmp_every))
+      return -1;
+    if (0 != test_one_memcp(bm_handle, &dev_mem_p[start_index1 + i + step],
+                            &dev_mem_p[start_index2 + i], sys_buffer,
+                            sys_buffer2, id, cmp_every))
+      return -1;
     end_index = start_index1 + i + step;
-    if (cmp_every == 1) {
-      if (bm_memcpy_d2s(bm_handle, sys_buffer2, dev_mem_p[end_index]) !=
-          BM_SUCCESS) {
-        printf("[ERROR %d] bm_memcpy_d2s from 0x%lX, dev %d failed\r\n", id,
-              dev_mem_p[end_index].u.device.device_addr, dev_id);
-        exit(EXIT_FAILURE);
-      }
-      if (memcmp(sys_buffer, sys_buffer2, shape_size) == 0) {
-        test_ret = 0;
-      } else {
-        size_t eaddr = cmp_find_error_addr(sys_buffer, sys_buffer2, shape_size);
-        printf("[ERROR %d] memcmp error at addr 0x%lX: 0x%X <-> 0x%X, device mem 0x%lX->0x%lX, size 0x%llX\r\n", id,
-              eaddr, sys_buffer[eaddr], sys_buffer2[eaddr], dev_mem_p[end_index].u.device.device_addr,
-              dev_mem_p[end_index - step].u.device.device_addr, shape_size);
-        test_ret = -1;
-        return test_ret;
-      }
-    }
   }
   i -= step;
   for (; i > 0; i -= step) {
-#if USE_GDMA_WITH_CORE
-    if (bm_memcpy_d2d_byte_with_core(bm_handle, dev_mem_p[start_index2 + i], 0,
-                           dev_mem_p[start_index1 + i], 0,
-                           shape_size,id % core_num) != BM_SUCCESS) {
-#else
-    if (bm_memcpy_d2d_byte(bm_handle, dev_mem_p[start_index2 + i], 0,
-                           dev_mem_p[start_index1 + i], 0,
-                           shape_size) != BM_SUCCESS) {
-#endif
-      printf("[ERROR %d] bm_memcpy_d2d_byte 0x%lX -> 0x%lX, dev %d failed\r\n",
-             id, dev_mem_p[start_index1 + i].u.device.device_addr,
-             dev_mem_p[start_index2 + i].u.device.device_addr, dev_id);
-      exit(EXIT_FAILURE);
-    }
-#if USE_GDMA_WITH_CORE
-    if (bm_memcpy_d2d_byte_with_core(bm_handle, dev_mem_p[start_index1 + i - step], 0,
-                           dev_mem_p[start_index2 + i], 0,
-                           shape_size,id % core_num) != BM_SUCCESS) {
-#else
-    if (bm_memcpy_d2d_byte(bm_handle, dev_mem_p[start_index1 + i - step], 0,
-                           dev_mem_p[start_index2 + i], 0,
-                           shape_size) != BM_SUCCESS) {
-#endif
-      printf("[ERROR %d] bm_memcpy_d2d_byte 0x%lX -> 0x%lX, dev %d failed\r\n",
-             id, dev_mem_p[start_index1 + i].u.device.device_addr,
-             dev_mem_p[start_index2 + i].u.device.device_addr, dev_id);
-      exit(EXIT_FAILURE);
-    }
+    if (0 != test_one_memcp(bm_handle, &dev_mem_p[start_index2 + i],
+                            &dev_mem_p[start_index1 + i], sys_buffer,
+                            sys_buffer2, id, cmp_every))
+      return -1;
+    if (0 != test_one_memcp(bm_handle, &dev_mem_p[start_index1 + i - step],
+                            &dev_mem_p[start_index2 + i], sys_buffer,
+                            sys_buffer2, id, cmp_every))
+      return -1;
     end_index = start_index1 + i + step;
-    if (cmp_every == 1) {
-      if (bm_memcpy_d2s(bm_handle, sys_buffer2, dev_mem_p[end_index]) !=
-          BM_SUCCESS) {
-        printf("[ERROR %d] bm_memcpy_d2s from 0x%lX, dev %d failed\r\n", id,
-              dev_mem_p[end_index].u.device.device_addr, dev_id);
-        exit(EXIT_FAILURE);
-      }
-      if (memcmp(sys_buffer, sys_buffer2, shape_size) == 0) {
-        test_ret = 0;
-      } else {
-        size_t eaddr = cmp_find_error_addr(sys_buffer, sys_buffer2, shape_size);
-        printf("[ERROR %d] memcmp error at addr 0x%lX: 0x%X <-> 0x%X, device mem 0x%lX->0x%lX, size 0x%llX\r\n", id,
-              eaddr, sys_buffer[eaddr], sys_buffer2[eaddr], dev_mem_p[end_index].u.device.device_addr,
-              dev_mem_p[end_index + step].u.device.device_addr, shape_size);
-        test_ret = -1;
-        return test_ret;
-      }
-    }
   }
-  if (bm_memcpy_d2s(bm_handle, sys_buffer2, dev_mem_p[end_index]) !=
-      BM_SUCCESS) {
-    printf("[ERROR %d] bm_memcpy_d2s from 0x%lX, dev %d failed\r\n", id,
-           dev_mem_p[end_index].u.device.device_addr, dev_id);
-    exit(EXIT_FAILURE);
-  }
-  if (memcmp(sys_buffer, sys_buffer2, shape_size) == 0) {
-    test_ret = 0;
-  } else {
-    size_t eaddr = cmp_find_error_addr(sys_buffer, sys_buffer2, shape_size);
-    printf("[ERROR %d] memcmp error at addr 0x%lX: 0x%X <-> 0x%X\r\n", id,
-           eaddr, sys_buffer[eaddr], sys_buffer2[eaddr]);
-    test_ret = -1;
-  }
-  return test_ret;
+  return test_one_cmp(bm_handle, &dev_mem_p[end_index],
+                      &dev_mem_p[start_index1], sys_buffer, sys_buffer2, id, 0);
 }
 
 inline long long get_microseconds() {
@@ -418,15 +359,13 @@ static void* test_gdma_ddr_thread(void* arg) {
       break;
     pthread_rwlock_rdlock(&rwlock);
     if (test_one_shot(bm_handle, bm_dev_mems, args->buffer_sys,
-                      args->buffer_cmp, 0,
-                      bm_dev_mem_num - 1, args->skip,
+                      args->buffer_cmp, 0, bm_dev_mem_num - 1, args->skip,
                       args->step, args->id, 0) != 0) {
-      printf("[PANIC %d] test_one_shot error, restart one loop cmp every...", args->id);
-      test_one_shot(bm_handle, bm_dev_mems, args->buffer_sys,
-                      args->buffer_cmp, 0,
-                      bm_dev_mem_num - 1, args->skip,
-                      args->step, args->id, 1);
-      printf("[PANIC %d] test_one_shot error", args->id);
+      printf("[PANIC %d] test_one_shot error, restart one loop cmp every..\n",
+             args->id);
+      test_one_shot(bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
+                    0, bm_dev_mem_num - 1, args->skip, args->step, args->id, 1);
+      printf("[PANIC %d] test_one_shot error\r\n", args->id);
       exit(EXIT_FAILURE);
     }
     pthread_rwlock_unlock(&rwlock);
@@ -436,17 +375,19 @@ static void* test_gdma_ddr_thread(void* arg) {
             ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 0, 4), args->step),
             INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4),
             ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4),
-            args->skip, args->step, args->id, 0) != 0) {
-      printf("[PANIC %d] test_two_edge error, restart one loop cmp every...", args->id);
+            INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4), args->skip, args->step,
+            args->id, 0) != 0) {
+      printf(
+          "[PANIC %d] test_two_edge error, restart one loop cmp every...\r\n",
+          args->id);
       test_two_edge(
-            bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
-            ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 0, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4),
-            ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4),
-            args->skip, args->step, args->id, 1);
-      printf("[PANIC %d] test_two_edge error", args->id);
+          bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
+          ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 0, 4), args->step),
+          INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4),
+          ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4), args->step),
+          INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4), args->skip, args->step,
+          args->id, 1);
+      printf("[PANIC %d] test_two_edge error\r\n", args->id);
       exit(EXIT_FAILURE);
     }
     pthread_rwlock_unlock(&rwlock);
@@ -456,17 +397,19 @@ static void* test_gdma_ddr_thread(void* arg) {
             ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 0, 4), args->step),
             INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4),
             ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4),
-            args->skip, args->step, args->id, 0) != 0) {
-      printf("[PANIC %d] test_two_edge error, restart one loop cmp every...", args->id);
+            INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->skip, args->step,
+            args->id, 0) != 0) {
+      printf(
+          "[PANIC %d] test_two_edge error, restart one loop cmp every...\r\n",
+          args->id);
       test_two_edge(
-            bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
-            ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 0, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4),
-            ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4),
-            args->skip, args->step, args->id, 1);
-      printf("[PANIC %d] test_two_edge error", args->id);
+          bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
+          ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 0, 4), args->step),
+          INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4),
+          ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4), args->step),
+          INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->skip, args->step,
+          args->id, 1);
+      printf("[PANIC %d] test_two_edge error\r\n", args->id);
       exit(EXIT_FAILURE);
     }
     pthread_rwlock_unlock(&rwlock);
@@ -476,17 +419,19 @@ static void* test_gdma_ddr_thread(void* arg) {
             ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 0, 4), args->step),
             INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4),
             ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 4, 4),
-            args->skip, args->step, args->id, 0) != 0) {
-      printf("[PANIC %d] test_two_edge error, restart one loop cmp every...", args->id);
+            INDEX_SHIFT((bm_dev_mem_num - 1), 4, 4), args->skip, args->step,
+            args->id, 0) != 0) {
+      printf(
+          "[PANIC %d] test_two_edge error, restart one loop cmp every...\r\n",
+          args->id);
       test_two_edge(
-            bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
-            ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 0, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4),
-            ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 4, 4),
-            args->skip, args->step, args->id, 1);
-      printf("[PANIC %d] test_two_edge error", args->id);
+          bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
+          ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 0, 4), args->step),
+          INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4),
+          ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->step),
+          INDEX_SHIFT((bm_dev_mem_num - 1), 4, 4), args->skip, args->step,
+          args->id, 1);
+      printf("[PANIC %d] test_two_edge error\r\n", args->id);
       exit(EXIT_FAILURE);
     }
     pthread_rwlock_unlock(&rwlock);
@@ -496,17 +441,19 @@ static void* test_gdma_ddr_thread(void* arg) {
             ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4), args->step),
             INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4),
             ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4),
-            args->skip, args->step, args->id, 0) != 0) {
-      printf("[PANIC %d] test_two_edge error, restart one loop cmp every...", args->id);
+            INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->skip, args->step,
+            args->id, 0) != 0) {
+      printf(
+          "[PANIC %d] test_two_edge error, restart one loop cmp every...\r\n",
+          args->id);
       test_two_edge(
-            bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
-            ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4),
-            ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4),
-            args->skip, args->step, args->id, 1);
-      printf("[PANIC %d] test_two_edge error", args->id);
+          bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
+          ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4), args->step),
+          INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4),
+          ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4), args->step),
+          INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->skip, args->step,
+          args->id, 1);
+      printf("[PANIC %d] test_two_edge error\r\n", args->id);
       exit(EXIT_FAILURE);
     }
     pthread_rwlock_unlock(&rwlock);
@@ -516,17 +463,19 @@ static void* test_gdma_ddr_thread(void* arg) {
             ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4), args->step),
             INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4),
             ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 4, 4),
-            args->skip, args->step, args->id, 0) != 0) {
-      printf("[PANIC %d] test_two_edge error, restart one loop cmp every...", args->id);
+            INDEX_SHIFT((bm_dev_mem_num - 1), 4, 4), args->skip, args->step,
+            args->id, 0) != 0) {
+      printf(
+          "[PANIC %d] test_two_edge error, restart one loop cmp every...\r\n",
+          args->id);
       test_two_edge(
-            bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
-            ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4),
-            ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 4, 4),
-            args->skip, args->step, args->id, 1);
-      printf("[PANIC %d] test_two_edge error", args->id);
+          bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
+          ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 1, 4), args->step),
+          INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4),
+          ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->step),
+          INDEX_SHIFT((bm_dev_mem_num - 1), 4, 4), args->skip, args->step,
+          args->id, 1);
+      printf("[PANIC %d] test_two_edge error\r\n", args->id);
       exit(EXIT_FAILURE);
     }
     pthread_rwlock_unlock(&rwlock);
@@ -536,17 +485,19 @@ static void* test_gdma_ddr_thread(void* arg) {
             ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4), args->step),
             INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4),
             ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 4, 4),
-            args->skip, args->step, args->id, 0) != 0) {
-      printf("[PANIC %d] test_two_edge error, restart one loop cmp every...", args->id);
+            INDEX_SHIFT((bm_dev_mem_num - 1), 4, 4), args->skip, args->step,
+            args->id, 0) != 0) {
+      printf(
+          "[PANIC %d] test_two_edge error, restart one loop cmp every...\r\n",
+          args->id);
       test_two_edge(
-            bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
-            ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4),
-            ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->step),
-            INDEX_SHIFT((bm_dev_mem_num - 1), 4, 4),
-            args->skip, args->step, args->id, 1);
-      printf("[PANIC %d] test_two_edge error", args->id);
+          bm_handle, bm_dev_mems, args->buffer_sys, args->buffer_cmp,
+          ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 2, 4), args->step),
+          INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4),
+          ALIGN_DOWN(INDEX_SHIFT((bm_dev_mem_num - 1), 3, 4), args->step),
+          INDEX_SHIFT((bm_dev_mem_num - 1), 4, 4), args->skip, args->step,
+          args->id, 1);
+      printf("[PANIC %d] test_two_edge error\r\n", args->id);
       exit(EXIT_FAILURE);
     }
     pthread_rwlock_unlock(&rwlock);
