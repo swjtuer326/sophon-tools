@@ -40,9 +40,15 @@ info:
   max: 900000000
   min: 0
   y_flag: [500000000, 800000000]
-- name: TPU_USAGE
+- name: TPU_USAGE0
   info_name: TPU_USAGE
   sampling_index: [0, 0]
+  y_name: TPU USAGE(%)
+  max: 100
+  min: 0
+- name: TPU_USAGE1
+  info_name: TPU_USAGE
+  sampling_index: [1, 0]
   y_name: TPU USAGE(%)
   max: 100
   min: 0
