@@ -36,7 +36,9 @@ x_value = []
 reboot_flag = []
 infos_data = {"" : []}
 basic_time=0
+warrning_info = ""
 
+warrning_info += "Cannot find data: "
 with open(log_name,'r') as file:
     while True:
         line = file.readline()
@@ -59,11 +61,15 @@ with open(log_name,'r') as file:
                     item_data=line.split("|")[-2].split(" ")[0 + item["sampling_index"][0]].split(",")[0 + item["sampling_index"][1]]
                 except Exception as e:
                     item_data = ""
+                    print("Warring: Index ", item["name"], " cannot find data in log file, del it")
+                    warrning_info += (item["name"] + " ")
                     del configs["info"][index]
-                    print("Warring: Index ", item, " cannot find in log file, del it")
                     continue
                 if item_data == "":
-                    data = Decimal(0)
+                    print("Warring: Index ", item["name"], " cannot find data in log file, del it")
+                    warrning_info += (item["name"] + " ")
+                    del configs["info"][index]
+                    continue
                 else:
                     data = Decimal(item_data)
                 if item.get("max") is not None:
@@ -100,6 +106,7 @@ print("Start draw pic...")
 plt.style.use("fast")
 fig, axs = plt.subplots(rows,cols,figsize=(rows * 8, cols * 8))
 
+pos = []
 for j in range(cols):
     for i in range(rows):
         if j*rows+i >= len(configs["info"]):
@@ -150,6 +157,8 @@ for j in range(cols):
         ax.yaxis.set_major_locator(MaxNLocator(50))
         ax.autoscale_view()
         ax.grid(True, alpha=0.5)
+        pos = ax.get_position()
+fig.text(0.01, 0.00, warrning_info, ha='left', va='bottom', fontsize=10, color='red')
 fig.tight_layout()
 print("write pic to file: ", args.log + ".png ...")
 fig.savefig(args.log + ".png", dpi=200, transparent=False)
