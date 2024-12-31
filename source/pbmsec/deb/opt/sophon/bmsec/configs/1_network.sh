@@ -15,7 +15,7 @@ if [ "$product" = "SE6-CTRL" ] || [ "$product" = "SE6 CTRL" ] || [ "$product" = 
     YAML_FILE="/etc/netplan/01-netcfg.yaml"
     INTERFACE_0="eth0"
     INTERFACE_1="eth1"
-    WAN="enp4s0"
+    # WAN="enp4s0"
 else #se8 x86
     seNCtrl_HOST_SUB_ETHS+=('eno1' 'enp2s0f0' 'bond0')
     seNCtrl_DEBUG_UART=/dev/ttyS1
@@ -35,20 +35,21 @@ if ifconfig | grep "^br" > /dev/null 2>&1 && [ "$Bridge_CONFIG_FLAG" == "1" ]; t
     ETH1_ADDRESSES=$(sudo grep -A 2 "$INTERFACE_1:" "$YAML_FILE" | grep "addresses:" | awk '{print $2}' | tr -d '[]')
     # check eth0 addresses
     if [ -n "$ETH0_ADDRESSES" ]; then
-        sudo sed -i "/$INTERFACE_0:/,/optional: yes/ {
+        sudo sed -i "/$INTERFACE_0:/,/addresses:/ {
             s/addresses: \[[^]]*\]/addresses: []/
         }" $YAML_FILE
     fi
 
     # check eth1 addresses
     if [ -n "$ETH1_ADDRESSES" ]; then
-        sudo sed -i "/$INTERFACE_1:/,/optional: yes/ {
+        sudo sed -i "/$INTERFACE_1:/,/addresses:/ {
             s/addresses: \[[^]]*\]/addresses: []/
         }" $YAML_FILE
     fi
 
     if [ -n "$ETH0_ADDRESSES" ] || [ -n "$ETH1_ADDRESSES" ]; then
-        echo "net config..."
+        echo "$INTERFACE_0 and $INTERFACE_1 is not null!"
+        echo "So set them null, net config..."
         sudo netplan apply
         sleep 5
     fi
