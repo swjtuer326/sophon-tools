@@ -1155,38 +1155,105 @@ config info:
         udp  172.26.166.158   8554:8555    (172.16.140.11 1)  8554-8555    
         tcp  172.26.166.158   8022         (172.16.150.12 8)  22          
         ```
-18. **设置网桥模式 [netconf \<opt>]**
-    - 注：该功能可以在控制板netplan增加网桥配置，同时设置算力节点为DHCP4模式；如果从网桥模式切换至其他模式，除了执行`bmsec netconf <opt>`外，您还需重启整个设备。当设备处于网桥模式时，如果重启了设备，您需执行`bmsec netconf 1`，以保证网桥模式可用。
+18. **设置网络模式 [netconf \<opt>]**
+    - 注：该功能可以在控制板设置4种网络模式，详情请参考参数\<opt>的描述。如果从模式1、2、3切换至其他模式，您需先执行`bmsec netconf 0`切换至模式0，然后重启，再切换到其他模式。当设备处于模式1/3时，如果重启了设备，请在开机5分钟后重新执行`bmsec netconf <opt>`命令，设置网络模式为1/3。
     - 参数：
         - `<opt>`：选项
-            - 0 :DHCP4端口转发模式
-            - 1 :网桥模式
+            - 0 : 模式0，DHCP4端口转发模式，本模式为默认模式
+            - 1 : 模式1，网桥模式
+            - 2 : 模式2，GE1、GE2网口聚合模式
+            - 3 : 模式3，网桥 ＋ GE1、GE2网口聚合模式
 
     - 说明：通过此功能，用户可以配置网络模式。
     - 命令行模式示例：
-        - `bmsec netconf 0`   DHCP4端口转发模式
-        - `bmsec netconf 1`   网桥模式
+        - 模式0: `bmsec netconf 0`   
+        - 模式1: `bmsec netconf 1`   
+        - 模式2: `bmsec netconf 2`   
+        - 模式3: `bmsec netconf 3`   
     - 输出示例:
 
-        网桥模式
+        模式1：网桥模式
 
-            ```bash
-            se6@se6-desktop:~$ bmsec netconf 1
-            config bridges...
-            Mode is set to 1
-            set all cores as DHCP MODE!
-            setting bridges in netplan yaml file...
-            backup /etc/netplan/01-network-manager-all.yaml
-            config netplan...
-            Update completed: 'wanname=br0' added.
-            ```
-        DHCP4端口转发模式
+        ```bash
+        se6@se6-desktop:~$ bmsec netconf 1
+        [info] config bridges...
+        [info] Mode is set to 1
+        [info] set all cores as DHCP MODE!
+        [info] setting bridges in netplan yaml file...
+        [info] backup /etc/netplan/01-network-manager-all.yaml
+        [info] config netplan...
+        [info] Update completed: 'wanname=br0' added.
+        ```
 
-            ```bash
-            se6@se6-desktop:~$ bmsec netconf 0
-            delete bridges config...
-            Mode is set to 0
-            reset network config of all cores
-            reset host netplan config...
-            please reboot!
-            ```
+        模式2：GE1、GE2网口聚合模式
+
+        ```bash
+        se6@se6-desktop:~$ bmsec netconf 2
+        [sudo] password for se6: 
+        [info] config bonding...
+        [info] Mode is set to 2
+        [info] Bonding mode!
+        [info] config netplan...
+        # Let NetworkManager manage all devices on this system
+        network:
+            version: 2
+            renderer: NetworkManager
+            bonds:
+                            bond0:
+                                    interfaces: [eno5,eno6]
+                                    dhcp4: yes
+                                    addresses: [172.26.166.141/24]
+                                    nameservers:
+                                            addresses: [8.8.8.8]
+                                    parameters:
+                                            mode: balance-rr
+        [info] Update completed:'wanname=bond0' added.
+        ```
+
+        模式3：网桥 ＋ GE1、GE2网口聚合模式
+
+        ```bash
+        se6@se6-desktop:~$ bmsec netconf 3
+        [sudo] password for se6:
+        [info] config bridges and bonding...
+        [info] mode is 3
+        [info] set all cores as DHCP MODE!
+        [info] setting bridges in netplan yaml file...
+        [info] backup /etc/netplan/01-network-manager-all.yaml
+        [info] Bonding and Bridge mode!
+        [info] config netplan...
+        # Let NetworkManager manage all devices on this system
+        network:
+            version: 2
+            renderer: NetworkManager
+            bonds:
+                        bond0:
+                                interfaces: [eno5,eno6]
+                                dhcp4: no
+                                addresses:[]
+                                nameservers:
+                                        addresses: []
+                                parameters:
+                                        mode: balance.rr
+            bridges:
+                        br0:
+                                interfaces: [bond0, eno1, eno3]
+                                dhcp4: yes
+                                addresses:[172,26,166,141/24, 198,54.140.200/24, 198.54.150.200/24]
+                                nameservers:
+                                        addresses: [8.8.8.8]
+        [info] Update completed:'wanname=br0' added.
+        ```
+    
+        模式0：DHCP4端口转发模式
+
+        ```bash
+        se6@se6-desktop:~$ bmsec netconf 0
+        [info] default config...
+        [info] Mode is set to 0
+        [info] reset network config of all cores
+        [info] bridge flag is 0
+        [info] reset host netplan config...
+        [info] config bond0 down and remove bonding! 
+        [info] please reboot!   
+        ```
