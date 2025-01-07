@@ -538,13 +538,10 @@ function socbak_allinone_pack()
 if [[ "${ALL_IN_ONE_FLAG}" != "" ]] && [[ "${ALL_IN_ONE_SCRIPT}" != "" ]]; then
 	if [[ "${SOC_BAK_ALL_IN_ONE}" =~ "sdcard" ]]; then
 		socbak_allinone_pack sdcard | tee -a $SOCBAK_LOG_PATH
-	fi
 	elif [[ "${SOC_BAK_ALL_IN_ONE}" =~ "tftp" ]]; then
 		socbak_allinone_pack tftp | tee -a $SOCBAK_LOG_PATH
-	fi
 	elif [[ "${SOC_BAK_ALL_IN_ONE}" =~ "usb" ]]; then
 		socbak_allinone_pack usb | tee -a $SOCBAK_LOG_PATH
-	fi
 	else
 		socbak_allinone_pack sdcard | tee -a $SOCBAK_LOG_PATH
 	fi
