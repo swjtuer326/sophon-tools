@@ -213,7 +213,8 @@ function compress_and_update_partition_script()
 	pigz -v ${filename}
 	if [[ $filename == *"usb"* ]]; then
 		echo "raw to cimg: $filename"
-		python raw2cimg_edge.py $filename.gz
+		SCRIPT_DIR=$(cd $(dirname ${BASH_SOURCE[0]}); pwd)
+		python3 $SCRIPT_DIR/raw2cimg_edge.py $filename.gz
 		mv $filename.gz.head $filename.gz
 	fi
 
