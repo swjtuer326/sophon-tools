@@ -6,4 +6,4 @@ dfss.egg-info
 !output
 !.gitkeep
 *.json
-.git_version
+git_version

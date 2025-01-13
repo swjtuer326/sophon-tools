@@ -39,7 +39,7 @@ def get_architecture():
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    filehandle = open(os.path.join(script_dir, 'output', '.git_version'),"r")
+    filehandle = open(os.path.join(script_dir, 'output', 'git_version'),"r")
     version_info = filehandle.readline().rstrip("\n").rstrip("\r")
     print("dfss python tool, version:", version_info)
     binary_arch = get_architecture()
