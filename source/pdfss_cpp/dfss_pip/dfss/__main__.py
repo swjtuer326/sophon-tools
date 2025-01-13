@@ -38,9 +38,12 @@ def get_architecture():
     return 'unknown'
 
 def main():
-    print("dfss python tool, version: v1.7.12")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    filehandle = open(os.path.join(script_dir, 'output', '.git_version'),"r")
+    version_info = filehandle.readline().rstrip("\n").rstrip("\r")
+    print("dfss python tool, version:", version_info)
     binary_arch = get_architecture()
-    
+
     if binary_arch == 'unknown':
         arch = platform.machine().lower()
         system = platform.system().lower()
@@ -49,7 +52,6 @@ def main():
         print("system:" + system)
         return 1
     print("Find architecture: " + binary_arch)
-    script_dir = os.path.dirname(os.path.abspath(__file__))
     binary_name = 'dfss-cpp-' + binary_arch
     binary_path = os.path.join(script_dir, 'output', binary_name)
     if not os.path.isfile(binary_path):
