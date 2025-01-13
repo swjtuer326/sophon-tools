@@ -1,5 +1,7 @@
 #!/bin/bash
 
+GET_INFO_VERSION="1.0.0"
+
 shopt -s compat31
 
 function panic()
