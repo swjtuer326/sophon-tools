@@ -86,7 +86,7 @@ def main():
 
 def install_package(package_name: str) -> int:
     print("Install package: " + package_name)
-    supported_packages = ['sail'] # TODO(wang.zhang): move supported list to FTP
+    supported_packages = ['sail','performance'] # TODO(wang.zhang): move supported list to FTP
     if package_name not in supported_packages:
         print("\033[31minstall target '{}' not supported\033[0m".format(package_name))
         return 1
